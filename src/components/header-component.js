@@ -166,6 +166,8 @@ export class HeaderComponent extends LitElement {
             -webkit-backdrop-filter: blur(12px);
             border-bottom: 1px solid var(--border-color);
             box-sizing: border-box;
+            position: relative;
+            z-index: 10;
         }
 
         .logo-area {
@@ -498,15 +500,15 @@ export class HeaderComponent extends LitElement {
 
                     <button class="header-btn" @click="${this.toggleFullscreen}" title="Toggle fullscreen mode">
                         ${this.isFullscreen
-                            ? html`
+                ? html`
                               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 16px; height: 16px;">
                                   <path d="M4 14h6v6M20 10h-6V4M14 10l7-7M10 14l-7 7" stroke-linecap="round" stroke-linejoin="round"/>
                               </svg>`
-                            : html`
+                : html`
                               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 16px; height: 16px;">
                                   <path d="M8 3H5a2 2 0 0 0-2 2v3M21 8V5a2 2 0 0 0-2-2h-3M3 16v3a2 2 0 0 0 2 2h3M16 21h3a2 2 0 0 0 2-2v-3" stroke-linecap="round" stroke-linejoin="round"/>
                               </svg>`
-                        }
+            }
                     </button>
                     
                     <button class="header-btn" @click="${this.toggleTheme}" title="Toggle between light and dark themes">

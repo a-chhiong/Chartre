@@ -47,12 +47,16 @@ export class PreviewComponent extends LitElement {
             display: flex;
             align-items: center;
             justify-content: space-between;
+            height: 40px;
             padding: 0 16px;
             background: var(--bg-panel-header);
+            border-top: 1px solid var(--border-color);
             border-bottom: 1px solid var(--border-color);
             box-sizing: border-box;
             flex-shrink: 0;
             gap: 12px;
+            position: relative;
+            z-index: 20;
         }
 
         .header-title {
