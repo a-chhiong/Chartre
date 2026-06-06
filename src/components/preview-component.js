@@ -1,4 +1,4 @@
-import { LitElement, html, css, unsafeCSS } from 'lit';
+import { LitElement, html, css } from 'lit';
 
 let plantumlRender;
 async function loadRenderer() {
@@ -26,6 +26,8 @@ export class PreviewComponent extends LitElement {
             flex-direction: column;
             width: 100%;
             height: 100%;
+            flex: 1;
+            min-height: 0;
             overflow: hidden;
         }
 
@@ -45,10 +47,10 @@ export class PreviewComponent extends LitElement {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            height: 56px;
             padding: 0 16px;
             background: var(--bg-panel-header);
             border-bottom: 1px solid var(--border-color);
+            box-sizing: border-box;
             flex-shrink: 0;
             gap: 12px;
         }
@@ -62,6 +64,7 @@ export class PreviewComponent extends LitElement {
             align-items: center;
             gap: 6px;
             white-space: nowrap;
+            height: 28px;
         }
 
         .zoom-controls {
@@ -70,10 +73,10 @@ export class PreviewComponent extends LitElement {
             align-items: center;
             gap: 4px;
             background: var(--bg-zoom-controls);
-            padding: 3px 6px;
+            padding: 0 6px;
             border-radius: 8px;
             border: 1px solid var(--border-color);
-            height: 36px;
+            height: 28px;
             box-sizing: border-box;
         }
 
@@ -111,11 +114,15 @@ export class PreviewComponent extends LitElement {
         .zoom-value {
             font-family: var(--font-code);
             font-size: 0.75rem;
-            font-weight: 600;
+            font-weight: 500;
             color: var(--text-primary);
             min-width: 34px;
             text-align: center;
             user-select: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            height: 20px;
         }
 
         /* Scrollable Canvas Viewport */
@@ -224,21 +231,22 @@ export class PreviewComponent extends LitElement {
             align-items: center;
             justify-content: flex-end;
             gap: 8px;
+            height: 28px;
         }
 
         /* Action Buttons */
         .action-btn {
-            display: inline-flex;
+            display: flex;
             align-items: center;
             justify-content: center;
             background: var(--midi-btn-bg);
             border: 1px solid var(--border-color);
             color: var(--text-primary);
             font-family: var(--font-ui);
-            font-size: 1rem;
+            font-size: 0.9rem;
             font-weight: 600;
-            height: 36px;
-            width: 36px;
+            height: 28px;
+            width: 28px;
             border-radius: 6px;
             cursor: pointer;
             transition: all var(--transition-fast);
@@ -258,14 +266,6 @@ export class PreviewComponent extends LitElement {
             transform: translateY(0);
         }
 
-        @media (max-width: 1024px) {
-            .action-btn {
-                height: 24px;
-                width: 24px;
-                font-size: 0.75rem;
-            }
-        }
-
         @media (max-width: 768px) {
             .preview-canvas {
                 padding: 12px;
@@ -276,35 +276,45 @@ export class PreviewComponent extends LitElement {
             }
 
             .preview-header {
-                height: 48px;
+                height: 36px;
                 padding: 0 10px;
                 gap: 6px;
+            }
+
+            .action-btn {
+                height: 24px;
+                width: 24px;
+                font-size: 0.75rem;
+            }
+
+            .header-controls {
+                height: 24px;
+            }
+
+            .zoom-controls {
+                height: 24px;
+                padding: 0 4px;
+                gap: 2px;
+            }
+
+            .zoom-btn, .zoom-reset-btn {
+                width: 16px;
+                height: 16px;
+                font-size: 0.65rem;
+            }
+
+            .zoom-value {
+                font-size: 0.7rem;
+                min-width: 28px;
+                height: 16px;
             }
         }
 
         @media (max-width: 480px) {
             .preview-header {
-                height: 48px;
+                height: 36px;
                 padding: 0 8px;
                 gap: 4px;
-            }
-            .zoom-controls {
-                padding: 2px 4px;
-                gap: 2px;
-                height: 24px;
-            }
-            .zoom-btn, .zoom-reset-btn {
-                width: 14px;
-                height: 14px;
-                font-size: 0.6rem;
-            }
-            .zoom-value {
-                font-size: 0.7rem;
-                min-width: 28px;
-            }
-            .action-btn {
-                height: 24px;
-                width: 24px;
             }
             .header-controls {
                 gap: 4px;
@@ -312,41 +322,44 @@ export class PreviewComponent extends LitElement {
         }
 
         /* Container queries for dynamic splitter resizing sensitivity */
-        @container (max-width: 680px) {
-            .title-text {
+        @container (max-width: 520px) {
+             .title-text {
                 display: none !important;
             }
-        }
 
-        @container (max-width: 520px) {
             .action-btn {
-                height: 24px;
-                width: 24px;
-                font-size: 0.8rem;
+                height: 28px;
+                width: 28px;
+                font-size: 0.9rem;
+            }
+
+            .header-controls {
+                height: 28px;
             }
 
             .zoom-controls {
                 gap: 4px;
-                padding: 2px 4px;
+                padding: 0 6px;
                 border-radius: 8px;
-                height: 24px;
+                height: 28px;
             }
 
             .zoom-btn, .zoom-reset-btn {
-                width: 14px;
-                height: 14px;
-                font-size: 0.6rem;
+                width: 20px;
+                height: 20px;
+                font-size: 0.75rem;
             }
 
             .zoom-value {
-                font-size: 0.7rem;
-                min-width: 28px;
+                font-size: 0.75rem;
+                min-width: 34px;
+                height: 20px;
             }
         }
 
         @container (max-width: 380px) {
             .preview-header {
-                height: 44px;
+                height: 36px;
                 padding: 0 8px;
                 gap: 4px;
             }
@@ -359,6 +372,28 @@ export class PreviewComponent extends LitElement {
                 height: 24px;
                 width: 24px;
                 font-size: 0.75rem;
+            }
+
+            .header-controls {
+                height: 24px;
+            }
+
+            .zoom-controls {
+                height: 24px;
+                padding: 0 4px;
+                gap: 2px;
+            }
+
+            .zoom-btn, .zoom-reset-btn {
+                width: 14px;
+                height: 14px;
+                font-size: 0.6rem;
+            }
+
+            .zoom-value {
+                font-size: 0.7rem;
+                min-width: 28px;
+                height: 16px;
             }
         }
 
@@ -475,13 +510,57 @@ export class PreviewComponent extends LitElement {
         this.zoom = 1.0;
     }
 
-    openLightbox() {
-        const svg = this.shadowRoot.querySelector('.notation-display svg');
-        if (!svg) return;
+    async openLightbox() {
+        const code = this.umlCode?.trim();
+        if (!code) return;
 
-        const modal = document.createElement('lightbox-modal');
-        modal.svgNode = svg;
-        document.body.appendChild(modal);
+        try {
+            const render = await loadRenderer();
+            const lines = code.split(/\r\n|\r|\n/);
+
+            render(
+                lines,
+                (svgString) => {
+                    const parser = new DOMParser();
+                    const doc = parser.parseFromString(svgString, 'text/html');
+                    const svgElement = doc.querySelector('svg');
+
+                    if (svgElement) {
+                        const modal = document.createElement('lightbox-modal');
+                        modal.svgNode = svgElement;
+                        document.body.appendChild(modal);
+                    } else {
+                        console.warn("No SVG element parsed from on-the-fly rendering. Using fallback.");
+                        const svg = this.shadowRoot.querySelector('.notation-display svg');
+                        if (svg) {
+                            const modal = document.createElement('lightbox-modal');
+                            modal.svgNode = svg;
+                            document.body.appendChild(modal);
+                        }
+                    }
+                },
+                (err) => {
+                    console.error("Failed to render lightbox SVG on the fly:", err);
+                    // Fallback to cloning existing SVG in case of compilation issues
+                    const svg = this.shadowRoot.querySelector('.notation-display svg');
+                    if (svg) {
+                        const modal = document.createElement('lightbox-modal');
+                        modal.svgNode = svg;
+                        document.body.appendChild(modal);
+                    }
+                },
+                { dark: false } // Force light theme for the white background of the lightbox
+            );
+        } catch (error) {
+            console.error("Failed to load renderer for lightbox:", error);
+            // Fallback to cloning existing SVG
+            const svg = this.shadowRoot.querySelector('.notation-display svg');
+            if (svg) {
+                const modal = document.createElement('lightbox-modal');
+                modal.svgNode = svg;
+                document.body.appendChild(modal);
+            }
+        }
     }
 
     async renderDiagram() {
@@ -608,66 +687,6 @@ export class PreviewComponent extends LitElement {
         }
     }
 
-    async handleCopyPNG() {
-        const svg = this.shadowRoot.querySelector('.notation-display svg');
-        if (!svg) {
-            alert('Please create a diagram first!');
-            return;
-        }
-
-        try {
-            const clone = svg.cloneNode(true);
-            if (clone.getAttribute("xmlns") == null) {
-                clone.setAttribute("xmlns", "http://www.w3.org/2000/svg");
-            }
-            const svgString = new XMLSerializer().serializeToString(clone);
-            const svgBlob = new Blob([svgString], { type: "image/svg+xml;charset=utf-8" });
-            const url = URL.createObjectURL(svgBlob);
-
-            const rect = svg.getBoundingClientRect();
-            const width = rect.width || svg.viewBox.baseVal.width || 600;
-            const height = rect.height || svg.viewBox.baseVal.height || 400;
-            const ratio = window.devicePixelRatio || 2; // high-dpi copy
-
-            const img = new Image();
-            img.width = width;
-            img.height = height;
-
-            await new Promise((resolve, reject) => {
-                img.onload = resolve;
-                img.onerror = () => reject(new Error("Image load failed"));
-                img.src = url;
-            });
-
-            const canvas = document.createElement("canvas");
-            canvas.width = Math.ceil(width * ratio);
-            canvas.height = Math.ceil(height * ratio);
-            const ctx = canvas.getContext("2d");
-
-            // Match background theme color or default white
-            const dark = document.documentElement.getAttribute('data-theme') === 'dark';
-            ctx.fillStyle = dark ? "#131a2c" : "#ffffff";
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-            ctx.scale(ratio, ratio);
-            ctx.drawImage(img, 0, 0, width, height);
-            URL.revokeObjectURL(url);
-
-            const blob = await new Promise((resolve, reject) => {
-                canvas.toBlob(b => b == null ? reject(new Error("toBlob failed")) : resolve(b), "image/png");
-            });
-
-            await navigator.clipboard.write([
-                new ClipboardItem({ "image/png": blob })
-            ]);
-
-            alert('✓ PNG Image copied to clipboard!');
-        } catch (err) {
-            console.error("Copy PNG failed:", err);
-            alert('Failed to copy PNG: ' + err.message);
-        }
-    }
-
     render() {
         const hasCode = this.umlCode?.trim().length > 0;
         const paperWidthPercent = Math.round(this.zoom * 100);
@@ -683,9 +702,7 @@ export class PreviewComponent extends LitElement {
                         <button class="zoom-btn" @click="${this.zoomOut}" ?disabled="${this.zoom <= 0.4}" title="Zoom Out">-</button>
                         <span class="zoom-value">${paperWidthPercent}%</span>
                         <button class="zoom-btn" @click="${this.zoomIn}" ?disabled="${this.zoom >= 1.8}" title="Zoom In">+</button>
-                        <button class="zoom-reset-btn" @click="${this.zoomReset}" ?disabled="${this.zoom === 1.0}" title="Reset Zoom">
-                            ↺
-                        </button>
+                        <button class="zoom-reset-btn" @click="${this.zoomReset}" ?disabled="${this.zoom === 1.0}" title="Reset Zoom">↺</button>
                     </div>
 
                     <div class="header-controls">
@@ -700,9 +717,6 @@ export class PreviewComponent extends LitElement {
                         </button>
                         <button class="action-btn" @click="${this.handleCopySVG}" title="Copy raw SVG to clipboard">
                             📋
-                        </button>
-                        <button class="action-btn" @click="${this.handleCopyPNG}" title="Copy diagram as PNG bitmap image">
-                            🖼️
                         </button>
                     </div>
                 </div>

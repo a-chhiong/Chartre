@@ -30,7 +30,7 @@ export class LightboxComponent extends LitElement {
         .overlay {
             position: fixed;
             inset: 0;
-            background: rgba(11, 15, 25, 0.93);
+            background: rgba(245, 247, 250, 0.82);
             backdrop-filter: blur(22px);
             -webkit-backdrop-filter: blur(22px);
             display: flex;
@@ -56,21 +56,20 @@ export class LightboxComponent extends LitElement {
             display: flex;
             align-items: center;
             justify-content: center;
-            background: rgba(255, 255, 255, 0.92);
+            background: #ffffff;
+            color: #1e293b; /* Enforce dark stroke/text color for currentColor SVGs */
             padding: 24px;
             /* Subtle paper shadow so the SVG "floats" */
             border-radius: 12px;
             box-shadow:
-                0 40px 100px rgba(0, 0, 0, 0.7),
-                0 0 0 1px rgba(255, 255, 255, 0.06);
+                0 20px 50px rgba(0, 0, 0, 0.12),
+                0 0 0 1px rgba(0, 0, 0, 0.05);
         }
 
         /* Style the injected SVG clone */
         .svg-wrapper svg {
             max-width: 100%;
             max-height: 100%;
-            width: auto;
-            height: auto;
             display: block;
         }
 
@@ -82,9 +81,9 @@ export class LightboxComponent extends LitElement {
             width: 40px;
             height: 40px;
             border-radius: 50%;
-            border: 1px solid rgba(255, 255, 255, 0.18);
-            background: rgba(255, 255, 255, 0.08);
-            color: #f8fafc;
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            background: rgba(0, 0, 0, 0.05);
+            color: #1e293b;
             cursor: pointer;
             display: flex;
             align-items: center;
@@ -94,8 +93,8 @@ export class LightboxComponent extends LitElement {
         }
 
         .close-btn:hover {
-            background: rgba(255, 255, 255, 0.22);
-            border-color: rgba(255, 255, 255, 0.38);
+            background: rgba(0, 0, 0, 0.1);
+            border-color: rgba(0, 0, 0, 0.2);
             transform: scale(1.1);
         }
 
@@ -112,7 +111,7 @@ export class LightboxComponent extends LitElement {
             font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
             font-size: 0.7rem;
             letter-spacing: 0.04em;
-            color: rgba(248, 250, 252, 0.28);
+            color: rgba(30, 41, 59, 0.6);
             pointer-events: none;
             white-space: nowrap;
             user-select: none;
@@ -160,10 +159,38 @@ export class LightboxComponent extends LitElement {
         if (!wrapper) return;
         wrapper.innerHTML = '';
         const clone = this.svgNode.cloneNode(true);
-        // Clear any inline sizing so our CSS fully controls it
+        
+        // Clear style attribute to remove any theme-based background colors/positions
         clone.removeAttribute('style');
-        clone.removeAttribute('width');
-        clone.removeAttribute('height');
+
+        // Check if viewBox exists
+        let viewBox = clone.getAttribute('viewBox');
+        if (!viewBox) {
+            // Try to create viewBox from width and height attributes
+            const w = this.svgNode.getAttribute('width') || clone.getAttribute('width');
+            const h = this.svgNode.getAttribute('height') || clone.getAttribute('height');
+            if (w && h) {
+                const wVal = w.replace('px', '').trim();
+                const hVal = h.replace('px', '').trim();
+                if (!isNaN(parseFloat(wVal)) && !isNaN(parseFloat(hVal))) {
+                    viewBox = `0 0 ${wVal} ${hVal}`;
+                    clone.setAttribute('viewBox', viewBox);
+                }
+            }
+        }
+
+        // If viewBox exists, enforce intrinsic width and height attributes
+        if (viewBox) {
+            const parts = viewBox.trim().split(/\s+/);
+            if (parts.length === 4) {
+                const wVal = parseFloat(parts[2]);
+                const hVal = parseFloat(parts[3]);
+                if (!isNaN(wVal) && !isNaN(hVal)) {
+                    clone.setAttribute('width', wVal);
+                    clone.setAttribute('height', hVal);
+                }
+            }
+        }
         wrapper.appendChild(clone);
     }
 

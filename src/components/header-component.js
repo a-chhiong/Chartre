@@ -159,7 +159,7 @@ export class HeaderComponent extends LitElement {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            height: 56px;
+            height: 48px;
             padding: 0 20px;
             background: var(--bg-glass);
             backdrop-filter: blur(12px);
@@ -212,7 +212,7 @@ export class HeaderComponent extends LitElement {
             font-family: var(--font-ui);
             font-size: 0.82rem;
             font-weight: 600;
-            height: 36px;
+            height: 32px;
             padding: 0 12px;
             border-radius: 6px;
             cursor: pointer;
@@ -239,14 +239,14 @@ export class HeaderComponent extends LitElement {
             display: flex;
             align-items: center;
             justify-content: center;
-            width: 36px;
-            height: 36px;
-            font-size: 1rem;
+            width: 32px;
+            height: 32px;
+            font-size: 0.95rem;
             color: var(--text-secondary);
             background: var(--midi-btn-bg);
             border: 1px solid var(--border-color);
-            border-radius: 8px;
-            margin-left: 8px;
+            border-radius: 6px;
+            margin-left: 6px;
             cursor: pointer;
             transition: all var(--transition-fast);
             outline: none;
@@ -255,8 +255,8 @@ export class HeaderComponent extends LitElement {
         }
 
         .header-btn svg {
-            width: 16px !important;
-            height: 16px !important;
+            width: 16px;
+            height: 16px;
         }
 
         .header-btn:hover {
@@ -278,7 +278,7 @@ export class HeaderComponent extends LitElement {
         @media (max-width: 768px) {
             .header-container {
                 padding: 0 8px;
-                height: 48px;
+                height: 44px;
             }
 
             .logo-subtitle {
@@ -302,20 +302,20 @@ export class HeaderComponent extends LitElement {
                 font-size: 0.75rem;
                 max-width: 100px;
                 margin-left: 4px;
-                height: 24px;
+                height: 30px;
             }
 
             .header-btn {
-                width: 24px;
-                height: 24px;
-                font-size: 0.8rem;
+                width: 30px;
+                height: 30px;
+                font-size: 0.85rem;
                 margin-left: 4px;
-                border-radius: 6px;
+                border-radius: 5px;
             }
 
             .header-btn svg {
-                width: 12px !important;
-                height: 12px !important;
+                width: 14px !important;
+                height: 14px !important;
             }
         }
 
@@ -482,14 +482,14 @@ export class HeaderComponent extends LitElement {
  
                 <div class="controls-wrapper">
                     <select class="presets-select" .value="${this.selectedPreset || ''}" @change="${this.handlePresetChange}" title="Load diagram template">
-                        <option value="" disabled>Templates</option>
-                        <option value="sequence">Sequence Diagram</option>
-                        <option value="class">Class Diagram</option>
-                        <option value="usecase">Use Case Diagram</option>
-                        <option value="activity">Activity Diagram</option>
-                        <option value="state">State Diagram</option>
-                        <option value="component">Component Diagram</option>
-                        <option value="mindmap">Mind Map</option>
+                        <option value="" disabled>模板</option>
+                        <option value="sequence">Sequence</option>
+                        <option value="class">Class</option>
+                        <option value="usecase">Use Case</option>
+                        <option value="activity">Activity</option>
+                        <option value="state">State</option>
+                        <option value="component">Component</option>
+                        <option value="mindmap">Mind-Map</option>
                     </select>
 
                     <button class="header-btn" @click="${this.handleShare}" title="Copy shareable link to clipboard">
@@ -499,11 +499,11 @@ export class HeaderComponent extends LitElement {
                     <button class="header-btn" @click="${this.toggleFullscreen}" title="Toggle fullscreen mode">
                         ${this.isFullscreen
                             ? html`
-                              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 18px; height: 18px;">
+                              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 16px; height: 16px;">
                                   <path d="M4 14h6v6M20 10h-6V4M14 10l7-7M10 14l-7 7" stroke-linecap="round" stroke-linejoin="round"/>
                               </svg>`
                             : html`
-                              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 18px; height: 18px;">
+                              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 16px; height: 16px;">
                                   <path d="M8 3H5a2 2 0 0 0-2 2v3M21 8V5a2 2 0 0 0-2-2h-3M3 16v3a2 2 0 0 0 2 2h3M16 21h3a2 2 0 0 0 2-2v-3" stroke-linecap="round" stroke-linejoin="round"/>
                               </svg>`
                         }

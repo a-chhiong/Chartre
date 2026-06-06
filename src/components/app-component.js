@@ -138,15 +138,15 @@ export class AppComponent extends LitElement {
 
         /* IDE-Style Status Bar at the bottom */
         .app-statusbar {
-            height: 24px;
+            height: 22px;
             background: var(--bg-panel-header);
             backdrop-filter: blur(12px);
             -webkit-backdrop-filter: blur(12px);
             border-top: 1px solid var(--border-color);
             display: flex;
             align-items: center;
-            padding: 0 16px;
-            font-size: 0.72rem;
+            padding: 0 10px;
+            font-size: 0.7rem;
             color: var(--text-secondary);
             font-family: var(--font-ui);
             gap: 8px;
