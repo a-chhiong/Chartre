@@ -16,7 +16,8 @@ export class PreviewComponent extends LitElement {
         umlCode: { type: String },
         zoom: { type: Number },
         error: { type: String },
-        compiling: { type: Boolean, state: true }
+        compiling: { type: Boolean, state: true },
+        desktop: { type: Boolean, reflect: true }
     };
 
     static styles = css`
@@ -270,16 +271,14 @@ export class PreviewComponent extends LitElement {
             transform: translateY(0);
         }
 
-        @media (max-width: 1023px) {
-            .diagram-paper {
-                display: block;
-                overflow: visible;
-            }
+        :host(:not([desktop])) .diagram-paper {
+            display: block;
+            overflow: visible;
+        }
 
-            .notation-display svg {
-                width: 100% !important;
-                height: auto !important;
-            }
+        :host(:not([desktop])) .notation-display svg {
+            width: 100% !important;
+            height: auto !important;
         }
 
         @media (max-width: 768px) {
