@@ -650,6 +650,12 @@ export class PreviewComponent extends LitElement {
         }
     }
 
+    _parseUMLTitle() {
+        if (!this.umlCode) return '';
+        const match = this.umlCode.match(/^\s*title\s+(.*)$/mi);
+        return match ? match[1].trim() : '';
+    }
+
     handleExportSVG() {
         const svg = this.shadowRoot.querySelector('.notation-display svg');
         if (!svg) {
@@ -658,6 +664,9 @@ export class PreviewComponent extends LitElement {
         }
 
         try {
+            const title = this._parseUMLTitle() || 'diagram';
+            const cleanTitle = title.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '') || 'diagram';
+
             // Include namespace if missing
             const clone = svg.cloneNode(true);
             if (clone.getAttribute("xmlns") == null) {
@@ -668,7 +677,7 @@ export class PreviewComponent extends LitElement {
             const url = URL.createObjectURL(blob);
             const link = document.createElement('a');
             link.href = url;
-            link.download = 'diagram.svg';
+            link.download = `${cleanTitle}.svg`;
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
