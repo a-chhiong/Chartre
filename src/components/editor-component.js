@@ -119,6 +119,7 @@ export class EditorComponent extends LitElement {
             flex: 1;
             min-height: 0;
             position: relative;
+            overflow: hidden; /* Encapsulates the children components */
         }
 
         .line-numbers-gutter {
@@ -136,6 +137,7 @@ export class EditorComponent extends LitElement {
             display: flex;
             flex-direction: column;
             flex-shrink: 0;
+            box-sizing: border-box; /* Ensures padding doesn't distort height calculations */
         }
 
         .line-numbers-gutter div {
@@ -154,8 +156,11 @@ export class EditorComponent extends LitElement {
         }
 
         .editor-input {
+            flex: 1;            /* Take up remaining width horizontally */
             width: 100%;
             height: 100%;
+            min-height: 0;      /* Force overflow boundaries */
+            min-width: 0;
             padding: 16px;
             font-family: var(--font-code);
             font-size: 0.85rem;
@@ -171,6 +176,7 @@ export class EditorComponent extends LitElement {
             word-wrap: normal;
             tab-size: 4;
             caret-color: var(--accent-violet);
+            box-sizing: border-box; /* Essential so padding doesn't create extra scrolling artifacts */
         }
 
 
