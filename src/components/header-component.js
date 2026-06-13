@@ -460,7 +460,7 @@ export class HeaderComponent extends LitElement {
             let shareUrl = window.location.href;
             if (LZString && this.umlCode) {
                 const compressed = LZString.compressToEncodedURIComponent(this.umlCode);
-                shareUrl = window.location.protocol + "//" + window.location.host + window.location.pathname + '?uml=' + compressed;
+                shareUrl = window.location.protocol + "//" + window.location.host + window.location.pathname + '#uml/' + compressed;
                 window.history.replaceState({ path: shareUrl }, '', shareUrl);
             }
             await this.copyTextToClipboard(shareUrl);

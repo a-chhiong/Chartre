@@ -186,7 +186,7 @@ export class AppComponent extends LitElement {
     constructor() {
         super();
         let code = this._loadFromUrl() || this._loadFromStorage() || this._getDefaultUML();
-        
+
         // Auto-heal local storage if it contains the old buggy welcome text
         if (code && code.includes("note over Renderer: No server requests!\nRuns completely in your browser.")) {
             code = this._getDefaultUML();
@@ -227,11 +227,11 @@ export class AppComponent extends LitElement {
     startDrag(e) {
         e.preventDefault();
         this.isDragging = true;
-        
+
         // Bind window-level handlers so drag doesn't drop when cursor leaves splitter
         this._onDragMove = this.onDragMove.bind(this);
         this._onDragEnd = this.onDragEnd.bind(this);
-        
+
         window.addEventListener('mousemove', this._onDragMove);
         window.addEventListener('mouseup', this._onDragEnd);
         window.addEventListener('touchmove', this._onDragMove, { passive: false });
@@ -240,17 +240,17 @@ export class AppComponent extends LitElement {
 
     onDragMove(e) {
         if (!this.isDragging) return;
-        
+
         e.preventDefault();
-        
+
         const clientX = e.touches ? e.touches[0].clientX : e.clientX;
         const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-        
+
         const mainEl = this.shadowRoot.querySelector('.app-main');
         if (!mainEl) return;
-        
+
         const rect = mainEl.getBoundingClientRect();
-        
+
         let percentage;
         if (this.isDesktop) {
             percentage = ((clientX - rect.left) / rect.width) * 100;
@@ -258,19 +258,19 @@ export class AppComponent extends LitElement {
             // column-reverse layout: editor is at the bottom, preview is at the top
             percentage = ((rect.bottom - clientY) / rect.height) * 100;
         }
-        
+
         // Constrain resize range between 15% and 85%
         this.splitPercentage = Math.max(15, Math.min(85, percentage));
     }
 
     onDragEnd() {
         this.isDragging = false;
-        
+
         window.removeEventListener('mousemove', this._onDragMove);
         window.removeEventListener('mouseup', this._onDragEnd);
         window.removeEventListener('touchmove', this._onDragMove);
         window.removeEventListener('touchend', this._onDragEnd);
-        
+
         // Dispatch window resize event so that layout can recalculate
         setTimeout(() => {
             window.dispatchEvent(new Event('resize'));
@@ -278,8 +278,14 @@ export class AppComponent extends LitElement {
     }
 
     _loadFromUrl() {
-        const params = new URLSearchParams(window.location.search);
-        const encoded = params.get('uml') || params.get('abc');
+        let encoded = null;
+        if (window.location.hash.startsWith('#uml/')) {
+            encoded = window.location.hash.substring(5);
+        } else {
+            const params = new URLSearchParams(window.location.search);
+            encoded = params.get('uml');
+        }
+
         if (encoded && LZString) {
             try {
                 const decoded = LZString.decompressFromEncodedURIComponent(encoded);
@@ -316,10 +322,10 @@ note over Renderer: No server requests!\\nRuns completely in your browser.
     handleUMLChanged(e) {
         this.umlCode = e.detail;
         localStorage.setItem('plantumlCode', this.umlCode);
-        
+
         if (LZString) {
             const compressed = LZString.compressToEncodedURIComponent(this.umlCode);
-            const newUrl = window.location.protocol + "//" + window.location.host + window.location.pathname + '?uml=' + compressed;
+            const newUrl = window.location.protocol + "//" + window.location.host + window.location.pathname + '#uml/' + compressed;
             window.history.replaceState({ path: newUrl }, '', newUrl);
         }
         this.requestUpdate();
@@ -331,10 +337,10 @@ note over Renderer: No server requests!\\nRuns completely in your browser.
     }
 
     render() {
-        const statusClass = this.isError 
-            ? 'error' 
+        const statusClass = this.isError
+            ? 'error'
             : (this.status === 'Compiling...' ? 'compiling' : 'ready');
-        
+
         return html`
             <div class="app-container ${this.isDesktop ? 'layout-desktop' : 'layout-mobile'}">
                 <header-component
