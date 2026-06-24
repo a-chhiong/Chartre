@@ -349,7 +349,7 @@ note over Renderer: No server requests!\\nRuns completely in your browser.
                 ></header-component>
 
                 <main class="app-main">
-                    <div class="editor-area" style="${this.isDesktop ? `width: ${this.splitPercentage}%; flex: none;` : `height: ${this.splitPercentage}%; flex: none;`}">
+                    <div class="editor-area" style="${this.isDesktop ? `width: calc(${this.splitPercentage}% - 2px); flex: none;` : `height: calc(${this.splitPercentage}% - 2px); flex: none;`}">
                         <editor-component
                             .umlCode="${this.umlCode}"
                             @uml-changed="${this.handleUMLChanged.bind(this)}"
@@ -360,7 +360,7 @@ note over Renderer: No server requests!\\nRuns completely in your browser.
                          @mousedown="${this.startDrag}" 
                          @touchstart="${this.startDrag}"></div>
                     
-                    <div class="preview-area" style="${this.isDesktop ? `width: ${100 - this.splitPercentage}%; flex: none;` : `height: ${100 - this.splitPercentage}%; flex: none;`}">
+                    <div class="preview-area" style="${this.isDesktop ? `width: calc(${100 - this.splitPercentage}% - 2px); flex: none;` : `height: calc(${100 - this.splitPercentage}% - 2px); flex: none;`}">
                         <preview-component
                             .umlCode="${this.umlCode}"
                             ?desktop="${this.isDesktop}"

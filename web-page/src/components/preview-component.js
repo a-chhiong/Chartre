@@ -49,9 +49,9 @@ export class PreviewComponent extends LitElement {
             align-items: center;
             justify-content: space-between;
             height: 40px;
+            min-height: 40px;
             padding: 0 16px;
             background: var(--bg-panel-header);
-            border-top: 1px solid var(--border-color);
             border-bottom: 1px solid var(--border-color);
             box-sizing: border-box;
             flex-shrink: 0;
@@ -298,6 +298,7 @@ export class PreviewComponent extends LitElement {
 
             .preview-header {
                 height: 36px;
+                min-height: 36px;
                 padding: 0 10px;
                 gap: 6px;
             }
@@ -334,6 +335,7 @@ export class PreviewComponent extends LitElement {
         @media (max-width: 480px) {
             .preview-header {
                 height: 36px;
+                min-height: 36px;
                 padding: 0 8px;
                 gap: 4px;
             }
@@ -381,6 +383,7 @@ export class PreviewComponent extends LitElement {
         @container (max-width: 380px) {
             .preview-header {
                 height: 36px;
+                min-height: 36px;
                 padding: 0 8px;
                 gap: 4px;
             }
