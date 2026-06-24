@@ -14,10 +14,9 @@ export class LightboxComponent extends LitElement {
     static properties = {
         svgNode: { type: Object },
         _closing: { type: Boolean, state: true },
-        zoom: { type: Number, state: true },
-        panX: { type: Number, state: true },
-        panY: { type: Number, state: true },
-        isDragging: { type: Boolean, state: true }
+        scale: { type: Number, state: true },
+        translateX: { type: Number, state: true },
+        translateY: { type: Number, state: true }
     };
 
     static styles = css`
@@ -52,46 +51,38 @@ export class LightboxComponent extends LitElement {
         /* ── SVG container ─────────────────────────────────────────────── */
         .svg-wrapper {
             position: relative;
-            max-width: 92vw;
-            max-height: 90vh;
-            width: 100%;
-            height: 100%;
+            width: 100vw;
+            height: 100vh;
             box-sizing: border-box;
             overflow: hidden; /* use custom drag pan */
             cursor: grab;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: #ffffff;
-            color: #1e293b; /* Enforce dark stroke/text color for currentColor SVGs */
-            padding: 24px;
-            /* Subtle paper shadow so the SVG "floats" */
-            border-radius: 12px;
-            box-shadow:
-                0 20px 50px rgba(0, 0, 0, 0.12),
-                0 0 0 1px rgba(0, 0, 0, 0.05);
+            background: var(--bg-primary, #f8fafc);
+            color: var(--text-primary, #0f172a);
             user-select: none;
+            touch-action: none;
         }
 
-        .svg-wrapper.dragging {
+        .svg-wrapper:active {
             cursor: grabbing;
         }
 
         .svg-content-holder {
+            position: absolute;
+            left: 0;
+            top: 0;
+            transform-origin: 0 0;
+            will-change: transform;
+            pointer-events: none; /* events go to wrapper */
             display: flex;
             align-items: center;
             justify-content: center;
-            transform-origin: center center;
-            will-change: transform;
-            pointer-events: none; /* events go to wrapper */
-            width: 100%;
-            height: 100%;
+            overflow: visible;
         }
 
         /* Style the injected SVG clone */
         .svg-content-holder svg {
-            max-width: 100%;
-            max-height: 100%;
+            width: 100%;
+            height: 100%;
             display: block;
         }
 
@@ -99,13 +90,13 @@ export class LightboxComponent extends LitElement {
         .close-btn {
             position: fixed;
             top: 20px;
-            right: 24px;
+            left: 24px;
             width: 40px;
             height: 40px;
             border-radius: 50%;
-            border: 1px solid rgba(0, 0, 0, 0.1);
-            background: rgba(0, 0, 0, 0.05);
-            color: #1e293b;
+            border: 1px solid var(--border-color, rgba(0, 0, 0, 0.1));
+            background: var(--midi-btn-bg, rgba(0, 0, 0, 0.05));
+            color: var(--text-primary, #1e293b);
             cursor: pointer;
             display: flex;
             align-items: center;
@@ -115,8 +106,8 @@ export class LightboxComponent extends LitElement {
         }
 
         .close-btn:hover {
-            background: rgba(0, 0, 0, 0.1);
-            border-color: rgba(0, 0, 0, 0.2);
+            background: var(--bg-glass-active, rgba(0, 0, 0, 0.1));
+            border-color: var(--border-hover, rgba(0, 0, 0, 0.2));
             transform: scale(1.1);
         }
 
@@ -128,19 +119,18 @@ export class LightboxComponent extends LitElement {
         .zoom-toolbar {
             position: fixed;
             bottom: 24px;
-            left: 50%;
-            transform: translateX(-50%);
+            right: 24px;
             display: flex;
             align-items: center;
             gap: 8px;
-            background: rgba(255, 255, 255, 0.85);
+            background: var(--bg-toolbar, rgba(255, 255, 255, 0.85));
             backdrop-filter: blur(12px);
             -webkit-backdrop-filter: blur(12px);
             padding: 6px 12px;
             border-radius: 99px;
             box-shadow: 
                 0 10px 30px rgba(0, 0, 0, 0.08), 
-                0 0 0 1px rgba(0, 0, 0, 0.05);
+                0 0 0 1px var(--border-color, rgba(0, 0, 0, 0.05));
             z-index: 100;
         }
 
@@ -153,7 +143,7 @@ export class LightboxComponent extends LitElement {
             display: flex;
             align-items: center;
             justify-content: center;
-            color: #1e293b;
+            color: var(--text-primary, #1e293b);
             font-size: 1.1rem;
             font-weight: 600;
             cursor: pointer;
@@ -161,7 +151,7 @@ export class LightboxComponent extends LitElement {
         }
 
         .zoom-btn:hover {
-            background: rgba(0, 0, 0, 0.05);
+            background: var(--bg-glass-active, rgba(0, 0, 0, 0.05));
         }
 
         .zoom-btn:active {
@@ -173,10 +163,10 @@ export class LightboxComponent extends LitElement {
         }
 
         .zoom-text {
-            font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+            font-family: var(--font-ui, 'Plus Jakarta Sans', sans-serif);
             font-size: 0.82rem;
             font-weight: 600;
-            color: #1e293b;
+            color: var(--text-primary, #1e293b);
             min-width: 44px;
             text-align: center;
             user-select: none;
@@ -185,13 +175,13 @@ export class LightboxComponent extends LitElement {
         /* ── Hint footer ───────────────────────────────────────────────── */
         .hint {
             position: fixed;
-            bottom: 68px;
+            bottom: 30px;
             left: 50%;
             transform: translateX(-50%);
-            font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
-            font-size: 0.7rem;
+            font-family: var(--font-ui, 'Plus Jakarta Sans', sans-serif);
+            font-size: 0.72rem;
             letter-spacing: 0.04em;
-            color: rgba(30, 41, 59, 0.6);
+            color: var(--text-secondary, rgba(30, 41, 59, 0.6));
             pointer-events: none;
             white-space: nowrap;
             user-select: none;
@@ -213,16 +203,16 @@ export class LightboxComponent extends LitElement {
     constructor() {
         super();
         this._closing = false;
-        this.zoom = 1.0;
-        this.panX = 0;
-        this.panY = 0;
+        this.scale = 1.0;
+        this.translateX = 0;
+        this.translateY = 0;
+
+        // Pan state
         this.isDragging = false;
         this.startX = 0;
         this.startY = 0;
-        
-        // Touch pinch-to-zoom tracking
-        this.startDist = 0;
-        this.startZoom = 1.0;
+        this.panX = 0;
+        this.panY = 0;
     }
 
     connectedCallback() {
@@ -283,6 +273,16 @@ export class LightboxComponent extends LitElement {
             }
         }
         wrapper.appendChild(clone);
+
+        // Reset transform states
+        this.scale = 1.0;
+        this.translateX = 0;
+        this.translateY = 0;
+
+        // Wait a frame for SVG rendering and styling to be computed correctly
+        requestAnimationFrame(() => {
+            this.fitToScreen();
+        });
     }
 
     _close() {
@@ -298,102 +298,258 @@ export class LightboxComponent extends LitElement {
         }
     }
 
-    // Drag-to-pan handlers
-    handleMouseDown(e) {
-        if (e.button !== 0) return; // Left click only
-        e.preventDefault();
-        this.isDragging = true;
-        this.startX = e.clientX - this.panX;
-        this.startY = e.clientY - this.panY;
+    applyTransform(smooth = false) {
+        const canvas = this.shadowRoot.querySelector('.svg-content-holder');
+        if (!canvas) return;
 
-        this._onMouseMove = this.handleMouseMove.bind(this);
-        this._onMouseUp = this.handleMouseUp.bind(this);
-        window.addEventListener('mousemove', this._onMouseMove);
-        window.addEventListener('mouseup', this._onMouseUp);
-    }
-
-    handleMouseMove(e) {
-        if (!this.isDragging) return;
-        this.panX = e.clientX - this.startX;
-        this.panY = e.clientY - this.startY;
-    }
-
-    handleMouseUp() {
-        this.isDragging = false;
-        window.removeEventListener('mousemove', this._onMouseMove);
-        window.removeEventListener('mouseup', this._onMouseUp);
-    }
-
-    // Mouse wheel zoom
-    handleWheel(e) {
-        e.preventDefault();
-        const zoomFactor = 1.1;
-        let newZoom;
-        if (e.deltaY < 0) {
-            newZoom = this.zoom * zoomFactor;
+        if (smooth) {
+            canvas.style.transition = 'transform 0.2s cubic-bezier(0.4, 0, 0.2, 1)';
+            setTimeout(() => {
+                if (canvas.style.transition && canvas.style.transition.includes('transform')) {
+                    canvas.style.transition = 'none';
+                }
+            }, 200);
         } else {
-            newZoom = this.zoom / zoomFactor;
+            canvas.style.transition = 'none';
         }
-        this.zoom = Math.max(0.4, Math.min(5.0, newZoom));
+
+        canvas.style.transform = `translate3d(${this.translateX}px, ${this.translateY}px, 0) scale(${this.scale})`;
     }
 
-    // Touch support (Drag to pan & pinch-to-zoom)
+    fitToScreen() {
+        const viewport = this.shadowRoot.querySelector('.svg-wrapper');
+        const canvas = this.shadowRoot.querySelector('.svg-content-holder');
+        if (!viewport || !canvas) return;
+
+        const svg = canvas.querySelector('svg');
+        if (!svg) return;
+
+        // Reset styles temporarily to read native size
+        canvas.style.width = '';
+        canvas.style.height = '';
+        svg.style.width = '';
+        svg.style.height = '';
+
+        const viewBoxAttr = svg.getAttribute('viewBox');
+        let svgWidth = 0;
+        let svgHeight = 0;
+
+        if (viewBoxAttr) {
+            const [, , w, h] = viewBoxAttr.split(' ').map(Number);
+            svgWidth = w;
+            svgHeight = h;
+        } else {
+            const rect = svg.getBoundingClientRect();
+            svgWidth = rect.width || svg.clientWidth || 800;
+            svgHeight = rect.height || svg.clientHeight || 600;
+        }
+
+        const viewportWidth = viewport.clientWidth;
+        const viewportHeight = viewport.clientHeight;
+
+        if (viewportWidth === 0 || viewportHeight === 0) return;
+
+        // Standardize canvas dimensions to match the SVG size
+        canvas.style.width = `${svgWidth}px`;
+        canvas.style.height = `${svgHeight}px`;
+        svg.style.width = '100%';
+        svg.style.height = '100%';
+        svg.style.maxWidth = 'none';
+        svg.style.maxHeight = 'none';
+        svg.style.display = 'block';
+
+        // Scale to fit with 10% padding
+        const scaleX = (viewportWidth * 0.9) / svgWidth;
+        const scaleY = (viewportHeight * 0.9) / svgHeight;
+        const fitScale = Math.min(scaleX, scaleY, 5.0); // Allow larger scaling in lightbox
+
+        this.scale = fitScale;
+        this.translateX = (viewportWidth - svgWidth * fitScale) / 2;
+        this.translateY = (viewportHeight - svgHeight * fitScale) / 2;
+
+        this.applyTransform(true);
+    }
+
+    resetZoom() {
+        const viewport = this.shadowRoot.querySelector('.svg-wrapper');
+        const canvas = this.shadowRoot.querySelector('.svg-content-holder');
+        if (!viewport || !canvas) return;
+
+        const svg = canvas.querySelector('svg');
+        if (!svg) return;
+
+        const viewBoxAttr = svg.getAttribute('viewBox');
+        let svgWidth = 0;
+        let svgHeight = 0;
+
+        if (viewBoxAttr) {
+            const [, , w, h] = viewBoxAttr.split(' ').map(Number);
+            svgWidth = w;
+            svgHeight = h;
+        } else {
+            const rect = svg.getBoundingClientRect();
+            svgWidth = rect.width || svg.clientWidth || 800;
+            svgHeight = rect.height || svg.clientHeight || 600;
+        }
+
+        const viewportWidth = viewport.clientWidth;
+        const viewportHeight = viewport.clientHeight;
+
+        this.scale = 1.0;
+        this.translateX = (viewportWidth - svgWidth) / 2;
+        this.translateY = (viewportHeight - svgHeight) / 2;
+
+        this.applyTransform(true);
+    }
+
+    zoomIn() {
+        this.zoomBy(1.15);
+    }
+
+    zoomOut() {
+        this.zoomBy(1 / 1.15);
+    }
+
+    zoomBy(factor) {
+        const viewport = this.shadowRoot.querySelector('.svg-wrapper');
+        if (!viewport) return;
+
+        const oldScale = this.scale;
+        let newScale = this.scale * factor;
+        newScale = Math.max(0.1, Math.min(10, newScale));
+
+        const mouseX = viewport.clientWidth / 2;
+        const mouseY = viewport.clientHeight / 2;
+
+        this.translateX = mouseX - (mouseX - this.translateX) * (newScale / oldScale);
+        this.translateY = mouseY - (mouseY - this.translateY) * (newScale / oldScale);
+        this.scale = newScale;
+
+        this.applyTransform(true);
+    }
+
+    // Pointer interaction events (Pan)
+    onPointerDown(e) {
+        if (e.button !== 0) return; // Only drag with left mouse button
+        if (e.target.closest('.zoom-toolbar') || e.target.closest('.close-btn')) return;
+
+        this.isDragging = true;
+        this.startX = e.clientX;
+        this.startY = e.clientY;
+        this.panX = this.translateX;
+        this.panY = this.translateY;
+
+        const viewport = this.shadowRoot.querySelector('.svg-wrapper');
+        if (viewport) {
+            viewport.setPointerCapture(e.pointerId);
+        }
+    }
+
+    onPointerMove(e) {
+        if (!this.isDragging) return;
+
+        const dx = e.clientX - this.startX;
+        const dy = e.clientY - this.startY;
+
+        this.translateX = this.panX + dx;
+        this.translateY = this.panY + dy;
+        this.applyTransform(false);
+    }
+
+    onPointerUp(e) {
+        if (!this.isDragging) return;
+        this.isDragging = false;
+
+        const viewport = this.shadowRoot.querySelector('.svg-wrapper');
+        if (viewport) {
+            viewport.releasePointerCapture(e.pointerId);
+        }
+    }
+
+    onWheel(e) {
+        e.preventDefault();
+
+        if (e.ctrlKey) {
+            // Zoom behaviour: Handle trackpad pinch gestures smoothly or standard ctrl + wheel zoom
+            let zoomFactor = 1.08;
+            if (Math.abs(e.deltaY) < 10) {
+                zoomFactor = 1 + (Math.abs(e.deltaY) * 0.03); // Smoother trackpad pinch
+            }
+
+            const direction = e.deltaY < 0 ? 1 : -1;
+            const oldScale = this.scale;
+            let newScale = direction > 0 ? this.scale * zoomFactor : this.scale / zoomFactor;
+
+            newScale = Math.max(0.1, Math.min(10, newScale));
+
+            const viewport = this.shadowRoot.querySelector('.svg-wrapper');
+            if (!viewport) return;
+
+            const rect = viewport.getBoundingClientRect();
+            const mouseX = e.clientX - rect.left;
+            const mouseY = e.clientY - rect.top;
+
+            this.translateX = mouseX - (mouseX - this.translateX) * (newScale / oldScale);
+            this.translateY = mouseY - (mouseY - this.translateY) * (newScale / oldScale);
+            this.scale = newScale;
+
+            this.applyTransform(false);
+            this.requestUpdate();
+        } else {
+            // Pan behaviour: standard wheel scroll moves the canvas vertically and horizontally
+            this.translateX -= e.deltaX;
+            this.translateY -= e.deltaY;
+            this.applyTransform(false);
+        }
+    }
+
+    onDoubleClick(e) {
+        if (e.target.closest('.zoom-toolbar') || e.target.closest('.close-btn')) return;
+        this.fitToScreen();
+    }
+
+    // Touch support (Multi-touch pinch zoom)
     handleTouchStart(e) {
-        if (e.touches.length === 1) {
-            this.isDragging = true;
-            this.startX = e.touches[0].clientX - this.panX;
-            this.startY = e.touches[0].clientY - this.panY;
-        } else if (e.touches.length === 2) {
+        if (e.touches.length === 2) {
             this.isDragging = false;
-            this.startDist = this._getTouchDist(e);
-            this.startZoom = this.zoom;
+            this.startDist = Math.hypot(
+                e.touches[0].clientX - e.touches[1].clientX,
+                e.touches[0].clientY - e.touches[1].clientY
+            );
+            this.startScale = this.scale;
         }
     }
 
     handleTouchMove(e) {
-        if (this.isDragging && e.touches.length === 1) {
+        if (e.touches.length === 2) {
             e.preventDefault();
-            this.panX = e.touches[0].clientX - this.startX;
-            this.panY = e.touches[0].clientY - this.startY;
-        } else if (e.touches.length === 2) {
-            e.preventDefault();
-            const dist = this._getTouchDist(e);
+            const dist = Math.hypot(
+                e.touches[0].clientX - e.touches[1].clientX,
+                e.touches[0].clientY - e.touches[1].clientY
+            );
             if (dist > 10 && this.startDist > 0) {
-                const scale = dist / this.startDist;
-                this.zoom = Math.max(0.4, Math.min(5.0, this.startZoom * scale));
+                const factor = dist / this.startDist;
+                const oldScale = this.scale;
+                let newScale = Math.max(0.1, Math.min(10, this.startScale * factor));
+
+                const viewport = this.shadowRoot.querySelector('.svg-wrapper');
+                if (!viewport) return;
+                const rect = viewport.getBoundingClientRect();
+                const midX = (e.touches[0].clientX + e.touches[1].clientX) / 2 - rect.left;
+                const midY = (e.touches[0].clientY + e.touches[1].clientY) / 2 - rect.top;
+
+                this.translateX = midX - (midX - this.translateX) * (newScale / oldScale);
+                this.translateY = midY - (midY - this.translateY) * (newScale / oldScale);
+                this.scale = newScale;
+
+                this.applyTransform(false);
+                this.requestUpdate();
             }
         }
     }
 
-    handleTouchEnd() {
-        this.isDragging = false;
-    }
-
-    _getTouchDist(e) {
-        return Math.hypot(
-            e.touches[0].clientX - e.touches[1].clientX,
-            e.touches[0].clientY - e.touches[1].clientY
-        );
-    }
-
-    // Zoom controls
-    zoomIn() {
-        this.zoom = Math.min(5.0, parseFloat((this.zoom + 0.2).toFixed(1)));
-    }
-
-    zoomOut() {
-        this.zoom = Math.max(0.4, parseFloat((this.zoom - 0.2).toFixed(1)));
-    }
-
-    resetZoom() {
-        this.zoom = 1.0;
-        this.panX = 0;
-        this.panY = 0;
-    }
-
     render() {
-        const transitionDuration = this.isDragging ? '0s' : '0.15s';
-        const transformStyle = `transform: translate(${this.panX}px, ${this.panY}px) scale(${this.zoom}); transition: transform ${transitionDuration} cubic-bezier(0.25, 0.46, 0.45, 0.94);`;
+        const zoomPct = Math.round(this.scale * 100);
 
         return html`
             <div
@@ -416,14 +572,17 @@ export class LightboxComponent extends LitElement {
                 </button>
 
                 <div 
-                    class="svg-wrapper ${this.isDragging ? 'dragging' : ''}"
-                    @mousedown="${this.handleMouseDown}"
-                    @touchstart="${this.handleTouchStart}"
-                    @touchmove="${this.handleTouchMove}"
-                    @touchend="${this.handleTouchEnd}"
-                    @wheel="${this.handleWheel}"
+                    class="svg-wrapper"
+                    @pointerdown=${this.onPointerDown}
+                    @pointermove=${this.onPointerMove}
+                    @pointerup=${this.onPointerUp}
+                    @pointercancel=${this.onPointerUp}
+                    @wheel=${this.onWheel}
+                    @dblclick=${this.onDoubleClick}
+                    @touchstart=${this.handleTouchStart}
+                    @touchmove=${this.handleTouchMove}
                 >
-                    <div class="svg-content-holder" style="${transformStyle}">
+                    <div class="svg-content-holder">
                         <!-- SVG injected here by updated() -->
                     </div>
                 </div>
@@ -432,9 +591,17 @@ export class LightboxComponent extends LitElement {
 
                 <div class="zoom-toolbar">
                     <button class="zoom-btn" @click="${this.zoomOut}" title="Zoom Out">-</button>
-                    <span class="zoom-text">${Math.round(this.zoom * 100)}%</span>
+                    <span class="zoom-text">${zoomPct}%</span>
                     <button class="zoom-btn" @click="${this.zoomIn}" title="Zoom In">+</button>
-                    <button class="zoom-btn reset" @click="${this.resetZoom}" title="Reset Zoom">↺</button>
+                    <button class="zoom-btn reset" @click="${this.resetZoom}" title="Actual Size (1:1)">1:1</button>
+                    <button class="zoom-btn reset" @click="${this.fitToScreen}" title="Fit to Screen" style="display: flex; align-items: center; justify-content: center;">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display: block;">
+                            <polyline points="15 3 21 3 21 9"></polyline>
+                            <polyline points="9 21 3 21 3 15"></polyline>
+                            <line x1="21" y1="3" x2="14" y2="10"></line>
+                            <line x1="3" y1="21" x2="10" y2="14"></line>
+                        </svg>
+                    </button>
                 </div>
             </div>
         `;

@@ -1,4 +1,6 @@
 import { LitElement, html, css } from 'lit';
+import { detectDiagramType } from './diagram-controller.js';
+import { PRESETS } from '../../public/syntax-template.js';
 
 export class EditorComponent extends LitElement {
     static properties = {
@@ -32,9 +34,9 @@ export class EditorComponent extends LitElement {
 
         /* Editor Header Panel */
         .editor-header {
-            display: flex;
+            display: grid;
+            grid-template-columns: 1fr auto 1fr;
             align-items: center;
-            justify-content: space-between;
             height: 40px;
             padding: 0 16px;
             background: var(--bg-panel-header);
@@ -46,6 +48,7 @@ export class EditorComponent extends LitElement {
         }
 
         .header-title {
+            justify-self: start;
             font-size: 0.9rem;
             font-weight: 600;
             color: var(--text-primary);
@@ -55,7 +58,43 @@ export class EditorComponent extends LitElement {
             white-space: nowrap;
         }
 
+        .presets-wrapper {
+            justify-self: center;
+            display: flex;
+            align-items: center;
+        }
+
+        .presets-select {
+            background: var(--midi-btn-bg);
+            border: 1px solid var(--border-color);
+            color: var(--text-secondary);
+            font-family: var(--font-ui);
+            font-size: 0.82rem;
+            font-weight: 600;
+            height: 28px;
+            padding: 0 8px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all var(--transition-fast);
+            outline: none;
+            max-width: 200px;
+            white-space: nowrap;
+            box-sizing: border-box;
+        }
+
+        .presets-select:hover {
+            background: var(--bg-glass-active);
+            color: var(--text-primary);
+            border-color: var(--accent-violet);
+        }
+
+        .presets-select option {
+            background: var(--bg-toolbar);
+            color: var(--text-primary);
+        }
+
         .header-controls {
+            justify-self: end;
             display: flex;
             align-items: center;
             gap: 8px;
@@ -246,6 +285,21 @@ export class EditorComponent extends LitElement {
                 font-size: 0.75rem;
             }
         }
+
+        @media (max-width: 768px) {
+            .presets-select {
+                height: 24px;
+                font-size: 0.75rem;
+                max-width: 120px;
+            }
+        }
+        @container (max-width: 380px) {
+            .presets-select {
+                height: 24px;
+                font-size: 0.75rem;
+                max-width: 100px;
+            }
+        }
     `;
 
     constructor() {
@@ -322,13 +376,13 @@ export class EditorComponent extends LitElement {
 
     _parseUMLTitle() {
         if (!this.umlCode) return '';
-        const match = this.umlCode.match(/^\s*title\s+(.*)$/mi);
+        const match = this.umlCode.match(/^\s*title(?:\s+|:\s*)(.*)$/mi);
         return match ? match[1].trim() : '';
     }
 
     handleSaveUMLFile() {
         if (!this.umlCode || !this.umlCode.trim()) {
-            alert('Please write some PlantUML code first!');
+            alert('Please write some diagram code first!');
             return;
         }
 
@@ -336,11 +390,14 @@ export class EditorComponent extends LitElement {
             const title = this._parseUMLTitle() || 'diagram';
             const cleanTitle = title.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '') || 'diagram';
 
+            const type = detectDiagramType(this.umlCode);
+            const ext = type === 'mermaid' ? 'mmd' : 'puml';
+
             const blob = new Blob([this.umlCode], { type: 'text/plain;charset=utf-8' });
             const url = URL.createObjectURL(blob);
             const link = document.createElement('a');
             link.href = url;
-            link.download = `${cleanTitle}.puml`;
+            link.download = `${cleanTitle}.${ext}`;
 
             document.body.appendChild(link);
             link.click();
@@ -360,19 +417,55 @@ export class EditorComponent extends LitElement {
         }
     }
 
-    // Preset changes are now handled by header-component
-
-
+    handlePresetChange(e) {
+        const val = e.target.value;
+        if (!val) return;
+        const code = PRESETS[val];
+        if (code) {
+            this.umlCode = code;
+            this._dispatchUMLChanged(code);
+        }
+        e.target.value = '';
+    }
 
     render() {
+        const type = detectDiagramType(this.umlCode);
+        const saveTitle = type === 'mermaid' ? 'Save current diagram code as a .mmd file' : 'Save current diagram code as a .puml file';
+        const loadTitle = 'Load file from device (.puml, .mmd, .txt)';
+
         return html`
             <div class="editor-container">
                 <div class="editor-header">
                     <div class="header-title">
-                        ✏️ <span class="title-text">PlantUML Editor</span>
+                        ✏️ <span class="title-text">Editor</span>
                     </div>
+                    
+                    <div class="presets-wrapper">
+                        <select class="presets-select" @change="${this.handlePresetChange}" title="Load diagram template">
+                            <option value="" disabled selected>模板 (Templates)</option>
+                            <optgroup label="☕ PlantUML">
+                                <option value="sequence">☕ Sequence</option>
+                                <option value="class">☕ Class</option>
+                                <option value="usecase">☕ Use Case</option>
+                                <option value="activity">☕ Activity</option>
+                                <option value="state">☕ State</option>
+                                <option value="component">☕ Component</option>
+                                <option value="mindmap">☕ Mind-Map</option>
+                            </optgroup>
+                            <optgroup label="🧜‍♀️ Mermaid">
+                                <option value="mermaid_flowchart">🧜‍♀️ Flowchart</option>
+                                <option value="mermaid_sequence">🧜‍♀️ Sequence</option>
+                                <option value="mermaid_class">🧜‍♀️ Class</option>
+                                <option value="mermaid_state">🧜‍♀️ State</option>
+                                <option value="mermaid_er">🧜‍♀️ Entity Relationship</option>
+                                <option value="mermaid_gantt">🧜‍♀️ Gantt</option>
+                                <option value="mermaid_mindmap">🧜‍♀️ Mindmap</option>
+                            </optgroup>
+                        </select>
+                    </div>
+
                     <div class="header-controls">
-                        <input type="file" id="uml-file-input" accept=".puml,.uml,.txt" style="display: none;" @change="${this.handleLoadUMLFile}">
+                        <input type="file" id="uml-file-input" accept=".puml,.uml,.txt,.mmd,.mermaid" style="display: none;" @change="${this.handleLoadUMLFile}">
 
                         <button
                             class="action-btn toggle-lines-btn ${this.showLineNumbers ? 'active' : ''}"
@@ -382,10 +475,10 @@ export class EditorComponent extends LitElement {
                             🔢
                         </button>
 
-                        <button class="action-btn" @click="${this.triggerFileInput}" title="Load .puml file from device">
+                        <button class="action-btn" @click="${this.triggerFileInput}" title="${loadTitle}">
                             📂
                         </button>
-                        <button class="action-btn" @click="${this.handleSaveUMLFile}" title="Save current diagram code as a .puml file">
+                        <button class="action-btn" @click="${this.handleSaveUMLFile}" title="${saveTitle}">
                             💾
                         </button>
                         <button class="action-btn danger" @click="${this.handleClear}" title="Clear all text">
@@ -403,7 +496,7 @@ export class EditorComponent extends LitElement {
                         ` : ''}
                         <textarea
                             class="editor-input"
-                            placeholder="Write your PlantUML here (e.g. starting with @startuml)..."
+                            placeholder="Write your PlantUML or Mermaid here (e.g. starting with @startuml or flowchart TD)..."
                             spellcheck="false"
                             wrap="off"
                             .value="${this.umlCode}"

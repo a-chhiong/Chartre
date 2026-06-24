@@ -1,151 +1,12 @@
 import { LitElement, html, css } from 'lit';
 import LZString from 'lz-string';
 
-const PRESETS = {
-    sequence: `@startuml Sequence
-title Online Shopping Sequence
-
-actor Customer
-participant "Web Portal" as Portal
-database "Inventory DB" as DB
-participant "Payment Gateway" as Gateway
-
-Customer -> Portal: Search for item
-Portal -> DB: Query stock
-DB --> Portal: Item available
-Portal --> Customer: Display item & Buy button
-
-Customer -> Portal: Click Buy Item
-Portal -> Gateway: Authorize payment
-Gateway --> Portal: Payment successful
-Portal -> DB: Decrement stock count
-Portal --> Customer: Show Order Confirmation page
-@enduml`,
-
-    class: `@startuml ClassDiagram
-title System Class Diagram
-
-interface Renderable {
-  +render(): SVG
-}
-
-class Diagram {
-  -sourceCode: String
-  -format: String
-  +getSVG(): SVG
-}
-
-class User {
-  +name: String
-  +email: String
-  +createDiagram(code: String): Diagram
-}
-
-Renderable <|.. Diagram
-User "1" *-- "many" Diagram : owns >
-@enduml`,
-
-    usecase: `@startuml UseCase
-left to right direction
-actor Customer
-actor Admin
-
-rectangle "Online Shop" {
-  Customer --> (Browse Products)
-  Customer --> (Checkout Order)
-  Customer --> (View Order History)
-  
-  (Manage Inventory) <-- Admin
-  (Add New Product) <-- Admin
-}
-@enduml`,
-
-    activity: `@startuml Activity
-title Document Approval Process
-
-start
-:Submit Document;
-if (Review Required?) then (yes)
-  :Assign Reviewers;
-  :Perform Review;
-  if (Review Status) then (approved)
-    :Approve Document;
-  else (rejected)
-    :Reject Document;
-    :Notify Author;
-    stop
-  endif
-else (no)
-  :Approve Document;
-endif
-:Publish Document;
-stop
-@enduml`,
-
-    state: `@startuml StateDiagram
-title Order Fulfillment State
-
-[*] --> Pending : Customer places order
-
-state Pending {
-  [*] --> PaymentAuth
-  PaymentAuth --> AwaitingShipping : Payment approved
-  PaymentAuth --> Cancelled : Insufficient funds
-}
-
-AwaitingShipping --> Shipped : Carrier picks up package
-Shipped --> Delivered : Delivery confirmation
-Delivered --> [*]
-Cancelled --> [*]
-@enduml`,
-
-    component: `@startuml ComponentDiagram
-title Microservice Architecture
-
-package "Frontend Client" {
-  [Single Page Application] as SPA
-}
-
-package "API Gateway Layer" {
-  [Reverse Proxy / Gateway] as GW
-}
-
-database "Redis Cache" as Cache
-
-package "Core Services" {
-  [Auth Service] as Auth
-  [Billing Service] as Billing
-}
-
-SPA --> GW : HTTP API requests
-GW --> Auth : Authenticate request
-GW --> Billing : Charge user
-Billing ..> Cache : Read/Write session
-@enduml`,
-
-    mindmap: `@startmindmap
-* Chartre Project
-** Core Engine
-*** Viz.js (Graphviz)
-*** PlantUML compilation (TeaVM)
-** UI Layer
-*** Lit web components
-*** Split Pane (Draggable)
-*** Theme sync (Light/Dark)
-** Features
-*** Live updates
-*** Shareable links
-*** Image exports (SVG / PNG)
-@endmindmap`
-};
-
 export class HeaderComponent extends LitElement {
     static properties = {
         umlCode: { type: String },
         isFullscreen: { type: Boolean },
         currentTheme: { type: String },
         shareSuccess: { type: Boolean },
-        selectedPreset: { type: String },
         _fauxFullscreen: { type: Boolean, state: true }
     };
 
@@ -207,35 +68,7 @@ export class HeaderComponent extends LitElement {
             align-items: center;
         }
 
-        .presets-select {
-            background: var(--midi-btn-bg);
-            border: 1px solid var(--border-color);
-            color: var(--text-secondary);
-            font-family: var(--font-ui);
-            font-size: 0.82rem;
-            font-weight: 600;
-            height: 32px;
-            padding: 0 12px;
-            border-radius: 6px;
-            cursor: pointer;
-            transition: all var(--transition-fast);
-            margin-left: 8px;
-            outline: none;
-            max-width: 140px;
-            white-space: nowrap;
-            box-sizing: border-box;
-        }
 
-        .presets-select:hover {
-            background: var(--bg-glass-active);
-            color: var(--text-primary);
-            border-color: var(--accent-violet);
-        }
-
-        .presets-select option {
-            background: var(--bg-toolbar);
-            color: var(--text-primary);
-        }
 
         .header-btn {
             display: flex;
@@ -299,13 +132,7 @@ export class HeaderComponent extends LitElement {
                 font-size: 0.95rem;
             }
 
-            .presets-select {
-                padding: 0 8px;
-                font-size: 0.75rem;
-                max-width: 100px;
-                margin-left: 4px;
-                height: 30px;
-            }
+
 
             .header-btn {
                 width: 30px;
@@ -321,12 +148,7 @@ export class HeaderComponent extends LitElement {
             }
         }
 
-        @media (max-width: 480px) {
-            .presets-select {
-                padding: 0 6px;
-                max-width: 85px;
-            }
-        }
+
     `;
 
     constructor() {
@@ -334,40 +156,7 @@ export class HeaderComponent extends LitElement {
         this.isFullscreen = false;
         this._fauxFullscreen = false;
         this.shareSuccess = false;
-        this.selectedPreset = '';
         this.currentTheme = document.documentElement.getAttribute('data-theme') || 'light';
-    }
-
-    willUpdate(changedProperties) {
-        if (changedProperties.has('umlCode')) {
-            const code = this.umlCode?.trim();
-            let matchedPreset = '';
-            if (code) {
-                for (const [key, val] of Object.entries(PRESETS)) {
-                    if (val.trim() === code) {
-                        matchedPreset = key;
-                        break;
-                    }
-                }
-            }
-            this.selectedPreset = matchedPreset;
-        }
-    }
-
-    handlePresetChange(e) {
-        const val = e.target.value;
-        if (val && PRESETS[val]) {
-            const currentCode = this.umlCode || '';
-            if (!currentCode.trim() || confirm('⚠️ WARNING: Loading a template will overwrite your current diagram.\n\nAre you sure you want to proceed?')) {
-                this.dispatchEvent(new CustomEvent('uml-changed', {
-                    detail: PRESETS[val],
-                    bubbles: true,
-                    composed: true
-                }));
-            } else {
-                e.target.value = this.selectedPreset || '';
-            }
-        }
     }
 
     connectedCallback() {
@@ -460,7 +249,7 @@ export class HeaderComponent extends LitElement {
             let shareUrl = window.location.href;
             if (LZString && this.umlCode) {
                 const compressed = LZString.compressToEncodedURIComponent(this.umlCode);
-                shareUrl = window.location.protocol + "//" + window.location.host + window.location.pathname + '#uml/' + compressed;
+                shareUrl = window.location.protocol + "//" + window.location.host + window.location.pathname + '#chart/' + compressed;
                 window.history.replaceState({ path: shareUrl }, '', shareUrl);
             }
             await this.copyTextToClipboard(shareUrl);
@@ -477,22 +266,12 @@ export class HeaderComponent extends LitElement {
         return html`
             <div class="header-container">
                 <div class="logo-area">
-                    <img class="logo-img" src="./favicon.svg" alt="PlantUML Logo" />
+                    <img class="logo-img" src="./favicon.svg" alt="Chartre Logo" />
                     <span class="logo-title">Chartre</span>
-                    <span class="logo-subtitle">PlantUML Workspace</span>
+                    <span class="logo-subtitle">Diagram Workspace</span>
                 </div>
  
                 <div class="controls-wrapper">
-                    <select class="presets-select" .value="${this.selectedPreset || ''}" @change="${this.handlePresetChange}" title="Load diagram template">
-                        <option value="" disabled>模板</option>
-                        <option value="sequence">Sequence</option>
-                        <option value="class">Class</option>
-                        <option value="usecase">Use Case</option>
-                        <option value="activity">Activity</option>
-                        <option value="state">State</option>
-                        <option value="component">Component</option>
-                        <option value="mindmap">Mind-Map</option>
-                    </select>
 
                     <button class="header-btn" @click="${this.handleShare}" title="Copy shareable link to clipboard">
                         ${this.shareSuccess ? '✅' : '🔗'}

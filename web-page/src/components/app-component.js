@@ -190,7 +190,7 @@ export class AppComponent extends LitElement {
         // Auto-heal local storage if it contains the old buggy welcome text
         if (code && code.includes("note over Renderer: No server requests!\nRuns completely in your browser.")) {
             code = this._getDefaultUML();
-            localStorage.setItem('plantumlCode', code);
+            localStorage.setItem('chartreCode', code);
         }
 
         this.umlCode = code;
@@ -279,11 +279,13 @@ export class AppComponent extends LitElement {
 
     _loadFromUrl() {
         let encoded = null;
-        if (window.location.hash.startsWith('#uml/')) {
+        if (window.location.hash.startsWith('#chart/')) {
+            encoded = window.location.hash.substring(7);
+        } else if (window.location.hash.startsWith('#uml/')) {
             encoded = window.location.hash.substring(5);
         } else {
             const params = new URLSearchParams(window.location.search);
-            encoded = params.get('uml');
+            encoded = params.get('chart') || params.get('uml');
         }
 
         if (encoded && LZString) {
@@ -305,27 +307,27 @@ actor User
 participant Editor as "Chartre UI"
 participant Renderer as "Client-side Engine"
 
-User -> Editor: Type PlantUML code
+User -> Editor: Type code (PlantUML or Mermaid)
 Editor -> Renderer: Send code lines
-Renderer -> Renderer: Parse and render (Viz.js)
+Renderer -> Renderer: Compile diagram client-side
 Renderer --> Editor: SVG output
 Editor --> User: Show interactive diagram
 
-note over Renderer: No server requests!\\nRuns completely in your browser.
+note over Renderer: Runs completely in your browser!\\nNo server requests.
 @enduml`;
     }
 
     _loadFromStorage() {
-        return localStorage.getItem('plantumlCode');
+        return localStorage.getItem('chartreCode') || localStorage.getItem('plantumlCode');
     }
 
     handleUMLChanged(e) {
         this.umlCode = e.detail;
-        localStorage.setItem('plantumlCode', this.umlCode);
+        localStorage.setItem('chartreCode', this.umlCode);
 
         if (LZString) {
             const compressed = LZString.compressToEncodedURIComponent(this.umlCode);
-            const newUrl = window.location.protocol + "//" + window.location.host + window.location.pathname + '#uml/' + compressed;
+            const newUrl = window.location.protocol + "//" + window.location.host + window.location.pathname + '#chart/' + compressed;
             window.history.replaceState({ path: newUrl }, '', newUrl);
         }
         this.requestUpdate();

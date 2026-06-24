@@ -1,22 +1,12 @@
 import { LitElement, html, css } from 'lit';
-
-let plantumlRender;
-async function loadRenderer() {
-    if (!plantumlRender) {
-        // Dynamic import resolved relative to the document base URI to handle subdirectory deployments
-        const libPath = new URL('./plantuml.js', document.baseURI).href;
-        const module = await import(/* @vite-ignore */ libPath);
-        plantumlRender = module.renderToString || module.render;
-    }
-    return plantumlRender;
-}
+import { DiagramCompilerController } from './diagram-controller.js';
 
 export class PreviewComponent extends LitElement {
     static properties = {
         umlCode: { type: String },
-        zoom: { type: Number },
-        error: { type: String },
-        compiling: { type: Boolean, state: true },
+        scale: { type: Number, state: true },
+        translateX: { type: Number, state: true },
+        translateY: { type: Number, state: true },
         desktop: { type: Boolean, reflect: true }
     };
 
@@ -132,13 +122,21 @@ export class PreviewComponent extends LitElement {
 
         /* Scrollable Canvas Viewport */
         .preview-canvas {
+            position: relative;
             flex: 1;
-            overflow: auto;
-            padding: 24px;
+            overflow: hidden;
             display: flex;
-            flex-direction: row;
-            align-items: flex-start; /* Anchor to left so zoomed paper never clips left edge */
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
             min-height: 0;
+            cursor: grab;
+            user-select: none;
+            touch-action: none;
+        }
+
+        .preview-canvas:active {
+            cursor: grabbing;
         }
 
         /* The Diagram Paper */
@@ -147,14 +145,17 @@ export class PreviewComponent extends LitElement {
             border-radius: 12px;
             box-shadow: var(--shadow-paper);
             padding: 20px;
-            transition: width var(--transition-normal), min-width var(--transition-normal);
-            margin: 0 auto 20px auto; /* Self-center when paper fits; auto margins collapse when paper is wider */
             box-sizing: border-box;
             border: 1px solid rgba(0, 0, 0, 0.06);
             display: flex;
             justify-content: center;
             align-items: center;
-            overflow: auto;
+            overflow: visible;
+            position: absolute;
+            left: 0;
+            top: 0;
+            transform-origin: 0 0;
+            will-change: transform;
         }
 
         .notation-display {
@@ -271,21 +272,7 @@ export class PreviewComponent extends LitElement {
             transform: translateY(0);
         }
 
-        :host(:not([desktop])) .preview-canvas {
-            /* Flows horizontally so wide SVGs expand into the right-side scroll zone */
-            flex-direction: column; 
-            align-items: flex-start; /* Anchor to left so zoomed paper never clips left edge */
-        }
 
-        :host(:not([desktop])) .diagram-paper {
-            display: block;
-            overflow: visible;
-        }
-
-        :host(:not([desktop])) .notation-display svg {
-            width: 100% !important;
-            height: auto !important;
-        }
 
         @media (max-width: 768px) {
             .preview-canvas {
@@ -484,23 +471,32 @@ export class PreviewComponent extends LitElement {
     constructor() {
         super();
         this.umlCode = '';
-        this.zoom = 1.0;
-        this.error = null;
-        this.compiling = false;
+        this.scale = 1.0;
+        this.translateX = 0;
+        this.translateY = 0;
+
+        // Pan state
+        this.isDragging = false;
+        this.startX = 0;
+        this.startY = 0;
+        this.panX = 0;
+        this.panY = 0;
+
         this._renderTimeout = null;
+        this._lastSvgString = null;
+        this.compiler = new DiagramCompilerController(this);
     }
 
-    connectedCallback() {
-        super.connectedCallback();
-        this._onThemeChanged = () => {
-            this.renderDiagram();
-        };
-        window.addEventListener('theme-changed', this._onThemeChanged);
+    get compiling() {
+        return this.compiler.compiling;
+    }
+
+    get error() {
+        return this.compiler.error;
     }
 
     disconnectedCallback() {
         super.disconnectedCallback();
-        window.removeEventListener('theme-changed', this._onThemeChanged);
         if (this._renderTimeout) {
             clearTimeout(this._renderTimeout);
         }
@@ -512,144 +508,245 @@ export class PreviewComponent extends LitElement {
                 clearTimeout(this._renderTimeout);
             }
             this._renderTimeout = setTimeout(() => {
-                this.renderDiagram();
+                this.compiler.compile(this.umlCode);
             }, 250); // Debounce diagram rendering slightly for typing smoothness
         }
 
-    }
-
-    zoomIn() {
-        if (this.zoom < 1.8) {
-            this.zoom = parseFloat((this.zoom + 0.1).toFixed(1));
-        }
-    }
-
-    zoomOut() {
-        if (this.zoom > 0.4) {
-            this.zoom = parseFloat((this.zoom - 0.1).toFixed(1));
-        }
-    }
-
-    zoomReset() {
-        this.zoom = 1.0;
-    }
-
-    async openLightbox() {
-        const code = this.umlCode?.trim();
-        if (!code) return;
-
-        try {
-            const render = await loadRenderer();
-            const lines = code.split(/\r\n|\r|\n/);
-
-            render(
-                lines,
-                (svgString) => {
-                    const parser = new DOMParser();
-                    const doc = parser.parseFromString(svgString, 'text/html');
-                    const svgElement = doc.querySelector('svg');
-
-                    if (svgElement) {
-                        const modal = document.createElement('lightbox-modal');
-                        modal.svgNode = svgElement;
-                        document.body.appendChild(modal);
-                    } else {
-                        console.warn("No SVG element parsed from on-the-fly rendering. Using fallback.");
-                        const svg = this.shadowRoot.querySelector('.notation-display svg');
-                        if (svg) {
-                            const modal = document.createElement('lightbox-modal');
-                            modal.svgNode = svg;
-                            document.body.appendChild(modal);
-                        }
-                    }
-                },
-                (err) => {
-                    console.error("Failed to render lightbox SVG on the fly:", err);
-                    // Fallback to cloning existing SVG in case of compilation issues
-                    const svg = this.shadowRoot.querySelector('.notation-display svg');
-                    if (svg) {
-                        const modal = document.createElement('lightbox-modal');
-                        modal.svgNode = svg;
-                        document.body.appendChild(modal);
-                    }
-                },
-                { dark: false } // Force light theme for the white background of the lightbox
-            );
-        } catch (error) {
-            console.error("Failed to load renderer for lightbox:", error);
-            // Fallback to cloning existing SVG
-            const svg = this.shadowRoot.querySelector('.notation-display svg');
-            if (svg) {
-                const modal = document.createElement('lightbox-modal');
-                modal.svgNode = svg;
-                document.body.appendChild(modal);
+        const currentSvgString = this.compiler.svgString;
+        if (currentSvgString !== this._lastSvgString) {
+            this._lastSvgString = currentSvgString;
+            if (currentSvgString) {
+                // Wait a frame for the SVG rendering to settle and layout dimensions to be valid
+                requestAnimationFrame(() => {
+                    this.fitToScreen();
+                });
+            } else {
+                // Reset transform states
+                this.scale = 1.0;
+                this.translateX = 0;
+                this.translateY = 0;
             }
         }
     }
 
-    async renderDiagram() {
-        const code = this.umlCode?.trim();
-        const displayDiv = this.shadowRoot.querySelector('.notation-display');
+    applyTransform(smooth = false) {
+        const canvas = this.shadowRoot.querySelector('.diagram-paper');
+        if (!canvas) return;
 
-        if (!displayDiv) return;
-
-        if (!code) {
-            displayDiv.innerHTML = '';
-            this.error = null;
-            this.compiling = false;
-            this.dispatchEvent(new CustomEvent('status-changed', {
-                detail: { status: 'Ready', isError: false },
-                bubbles: true,
-                composed: true
-            }));
-            return;
+        if (smooth) {
+            canvas.style.transition = 'transform 0.2s cubic-bezier(0.4, 0, 0.2, 1)';
+            setTimeout(() => {
+                if (canvas.style.transition && canvas.style.transition.includes('transform')) {
+                    canvas.style.transition = 'none';
+                }
+            }, 200);
+        } else {
+            canvas.style.transition = 'none';
         }
 
-        this.compiling = true;
-        this.dispatchEvent(new CustomEvent('status-changed', {
-            detail: { status: 'Compiling...', isError: false },
-            bubbles: true,
-            composed: true
-        }));
+        canvas.style.transform = `translate3d(${this.translateX}px, ${this.translateY}px, 0) scale(${this.scale})`;
+    }
 
-        try {
-            const lines = code.split(/\r\n|\r|\n/);
-            const render = await loadRenderer();
-            const dark = document.documentElement.getAttribute('data-theme') === 'dark';
+    fitToScreen() {
+        const viewport = this.shadowRoot.querySelector('.preview-canvas');
+        const canvas = this.shadowRoot.querySelector('.diagram-paper');
+        if (!viewport || !canvas) return;
 
-            render(
-                lines,
-                (svgString) => {
-                    displayDiv.innerHTML = svgString;
-                    this.error = null;
-                    this.compiling = false;
-                    this.dispatchEvent(new CustomEvent('status-changed', {
-                        detail: { status: '✓ Diagram Ready', isError: false },
-                        bubbles: true,
-                        composed: true
-                    }));
-                },
-                (err) => {
-                    console.error("PlantUML compile error:", err);
-                    this.error = err.message || String(err);
-                    this.compiling = false;
-                    this.dispatchEvent(new CustomEvent('status-changed', {
-                        detail: { status: '✗ Compilation Error', isError: true },
-                        bubbles: true,
-                        composed: true
-                    }));
-                },
-                { dark: dark }
-            );
-        } catch (error) {
-            console.error("Renderer load error:", error);
-            this.error = error.message || String(error);
-            this.compiling = false;
-            this.dispatchEvent(new CustomEvent('status-changed', {
-                detail: { status: '✗ Engine Error', isError: true },
-                bubbles: true,
-                composed: true
-            }));
+        const svg = canvas.querySelector('svg');
+        if (!svg) return;
+
+        // Reset styles temporarily to read native size
+        canvas.style.width = '';
+        canvas.style.height = '';
+        svg.style.width = '';
+        svg.style.height = '';
+
+        const viewBoxAttr = svg.getAttribute('viewBox');
+        let svgWidth = 0;
+        let svgHeight = 0;
+
+        if (viewBoxAttr) {
+            const [, , w, h] = viewBoxAttr.split(' ').map(Number);
+            svgWidth = w;
+            svgHeight = h;
+        } else {
+            const rect = svg.getBoundingClientRect();
+            svgWidth = rect.width || svg.clientWidth || 800;
+            svgHeight = rect.height || svg.clientHeight || 600;
+        }
+
+        const viewportWidth = viewport.clientWidth;
+        const viewportHeight = viewport.clientHeight;
+
+        if (viewportWidth === 0 || viewportHeight === 0) return;
+
+        // Standardize canvas dimensions to match the SVG size
+        canvas.style.width = `${svgWidth}px`;
+        canvas.style.height = `${svgHeight}px`;
+        svg.style.width = '100%';
+        svg.style.height = '100%';
+        svg.style.maxWidth = 'none';
+        svg.style.maxHeight = 'none';
+        svg.style.display = 'block';
+
+        // Scale to fit with 10% padding
+        const scaleX = (viewportWidth * 0.9) / svgWidth;
+        const scaleY = (viewportHeight * 0.9) / svgHeight;
+        const fitScale = Math.min(scaleX, scaleY, 1.5); // Cap upscaling to 1.5 for aesthetics
+
+        this.scale = fitScale;
+        this.translateX = (viewportWidth - svgWidth * fitScale) / 2;
+        this.translateY = (viewportHeight - svgHeight * fitScale) / 2;
+
+        this.applyTransform(true);
+    }
+
+    resetZoom() {
+        const viewport = this.shadowRoot.querySelector('.preview-canvas');
+        const canvas = this.shadowRoot.querySelector('.diagram-paper');
+        if (!viewport || !canvas) return;
+
+        const svg = canvas.querySelector('svg');
+        if (!svg) return;
+
+        const viewBoxAttr = svg.getAttribute('viewBox');
+        let svgWidth = 0;
+        let svgHeight = 0;
+
+        if (viewBoxAttr) {
+            const [, , w, h] = viewBoxAttr.split(' ').map(Number);
+            svgWidth = w;
+            svgHeight = h;
+        } else {
+            const rect = svg.getBoundingClientRect();
+            svgWidth = rect.width || svg.clientWidth || 800;
+            svgHeight = rect.height || svg.clientHeight || 600;
+        }
+
+        const viewportWidth = viewport.clientWidth;
+        const viewportHeight = viewport.clientHeight;
+
+        this.scale = 1.0;
+        this.translateX = (viewportWidth - svgWidth) / 2;
+        this.translateY = (viewportHeight - svgHeight) / 2;
+
+        this.applyTransform(true);
+    }
+
+    zoomIn() {
+        this.zoomBy(1.15);
+    }
+
+    zoomOut() {
+        this.zoomBy(1 / 1.15);
+    }
+
+    zoomBy(factor) {
+        const viewport = this.shadowRoot.querySelector('.preview-canvas');
+        if (!viewport) return;
+
+        const oldScale = this.scale;
+        let newScale = this.scale * factor;
+        newScale = Math.max(0.1, Math.min(10, newScale));
+
+        const mouseX = viewport.clientWidth / 2;
+        const mouseY = viewport.clientHeight / 2;
+
+        this.translateX = mouseX - (mouseX - this.translateX) * (newScale / oldScale);
+        this.translateY = mouseY - (mouseY - this.translateY) * (newScale / oldScale);
+        this.scale = newScale;
+
+        this.applyTransform(true);
+    }
+
+    // Pointer interaction events (Pan)
+    onPointerDown(e) {
+        if (e.button !== 0) return; // Only drag with left mouse button
+        if (e.target.closest('.zoom-controls') || e.target.closest('.header-controls') || e.target.closest('.error-panel') || e.target.closest('.empty-state')) return;
+
+        this.isDragging = true;
+        this.startX = e.clientX;
+        this.startY = e.clientY;
+        this.panX = this.translateX;
+        this.panY = this.translateY;
+
+        const viewport = this.shadowRoot.querySelector('.preview-canvas');
+        if (viewport) {
+            viewport.setPointerCapture(e.pointerId);
+        }
+    }
+
+    onPointerMove(e) {
+        if (!this.isDragging) return;
+
+        const dx = e.clientX - this.startX;
+        const dy = e.clientY - this.startY;
+
+        this.translateX = this.panX + dx;
+        this.translateY = this.panY + dy;
+        this.applyTransform(false);
+    }
+
+    onPointerUp(e) {
+        if (!this.isDragging) return;
+        this.isDragging = false;
+
+        const viewport = this.shadowRoot.querySelector('.preview-canvas');
+        if (viewport) {
+            viewport.releasePointerCapture(e.pointerId);
+        }
+    }
+
+    onWheel(e) {
+        e.preventDefault();
+
+        if (e.ctrlKey) {
+            // Zoom behaviour: Handle trackpad pinch gestures smoothly or standard ctrl + wheel zoom
+            let zoomFactor = 1.08;
+            if (Math.abs(e.deltaY) < 10) {
+                zoomFactor = 1 + (Math.abs(e.deltaY) * 0.03); // Smoother trackpad pinch
+            }
+
+            const direction = e.deltaY < 0 ? 1 : -1;
+            const oldScale = this.scale;
+            let newScale = direction > 0 ? this.scale * zoomFactor : this.scale / zoomFactor;
+
+            newScale = Math.max(0.1, Math.min(10, newScale));
+
+            const viewport = this.shadowRoot.querySelector('.preview-canvas');
+            if (!viewport) return;
+
+            const rect = viewport.getBoundingClientRect();
+            const mouseX = e.clientX - rect.left;
+            const mouseY = e.clientY - rect.top;
+
+            this.translateX = mouseX - (mouseX - this.translateX) * (newScale / oldScale);
+            this.translateY = mouseY - (mouseY - this.translateY) * (newScale / oldScale);
+            this.scale = newScale;
+
+            this.applyTransform(false);
+            this.requestUpdate();
+        } else {
+            // Pan behaviour: standard wheel scroll moves the canvas vertically and horizontally
+            this.translateX -= e.deltaX;
+            this.translateY -= e.deltaY;
+            this.applyTransform(false);
+        }
+    }
+
+    onDoubleClick(e) {
+        if (e.target.closest('.zoom-controls') || e.target.closest('.header-controls') || e.target.closest('.error-panel') || e.target.closest('.empty-state')) return;
+        this.fitToScreen();
+    }
+
+    openLightbox() {
+        const svg = this.shadowRoot.querySelector('.notation-display svg');
+        if (svg) {
+            const modal = document.createElement('lightbox-modal');
+            modal.svgNode = svg;
+            document.body.appendChild(modal);
+        } else {
+            alert('Please create a diagram first!');
         }
     }
 
@@ -722,7 +819,7 @@ export class PreviewComponent extends LitElement {
 
     render() {
         const hasCode = this.umlCode?.trim().length > 0;
-        const paperWidthPercent = Math.round(this.zoom * 100);
+        const zoomPct = Math.round(this.scale * 100);
 
         return html`
             <div class="preview-container">
@@ -732,39 +829,57 @@ export class PreviewComponent extends LitElement {
                     </div>
                     
                     <div class="zoom-controls">
-                        <button class="zoom-btn" @click="${this.zoomOut}" ?disabled="${this.zoom <= 0.4}" title="Zoom Out">-</button>
-                        <span class="zoom-value">${paperWidthPercent}%</span>
-                        <button class="zoom-btn" @click="${this.zoomIn}" ?disabled="${this.zoom >= 1.8}" title="Zoom In">+</button>
-                        <button class="zoom-reset-btn" @click="${this.zoomReset}" ?disabled="${this.zoom === 1.0}" title="Reset Zoom">↺</button>
+                        <button class="zoom-btn" @click="${this.zoomOut}" ?disabled="${!hasCode || !!this.error}" title="Zoom Out">-</button>
+                        <span class="zoom-value">${zoomPct}%</span>
+                        <button class="zoom-btn" @click="${this.zoomIn}" ?disabled="${!hasCode || !!this.error}" title="Zoom In">+</button>
+                        <button class="zoom-reset-btn" @click="${this.resetZoom}" ?disabled="${!hasCode || !!this.error}" title="Actual Size (1:1)">1:1</button>
+                        <button class="zoom-reset-btn" @click="${this.fitToScreen}" ?disabled="${!hasCode || !!this.error}" title="Fit to Screen">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display: block;">
+                                <polyline points="15 3 21 3 21 9"></polyline>
+                                <polyline points="9 21 3 21 3 15"></polyline>
+                                <line x1="21" y1="3" x2="14" y2="10"></line>
+                                <line x1="3" y1="21" x2="10" y2="14"></line>
+                            </svg>
+                        </button>
                     </div>
 
                     <div class="header-controls">
-                        <button class="action-btn" @click="${this.openLightbox}" ?disabled="${!hasCode}" title="View diagram fullscreen">
+                        <button class="action-btn" @click="${this.openLightbox}" ?disabled="${!hasCode || !!this.error}" title="View diagram fullscreen">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px;pointer-events:none">
                                 <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" stroke-linecap="round" stroke-linejoin="round"/>
                                 <circle cx="12" cy="12" r="3"/>
                             </svg>
                         </button>
-                        <button class="action-btn" @click="${this.handleExportSVG}" title="Download diagram as SVG">
+                        <button class="action-btn" @click="${this.handleExportSVG}" ?disabled="${!hasCode || !!this.error}" title="Download diagram as SVG">
                             📥
                         </button>
-                        <button class="action-btn" @click="${this.handleCopySVG}" title="Copy raw SVG to clipboard">
+                        <button class="action-btn" @click="${this.handleCopySVG}" ?disabled="${!hasCode || !!this.error}" title="Copy raw SVG to clipboard">
                             📋
                         </button>
                     </div>
                 </div>
 
                 <div class="canvas-wrapper">
-                    <div class="preview-canvas">
+                    <div 
+                        class="preview-canvas"
+                        @pointerdown=${this.onPointerDown}
+                        @pointermove=${this.onPointerMove}
+                        @pointerup=${this.onPointerUp}
+                        @pointercancel=${this.onPointerUp}
+                        @wheel=${this.onWheel}
+                        @dblclick=${this.onDoubleClick}
+                    >
                         ${!hasCode ? html`
                             <div class="empty-state">
-                                <img class="empty-icon" src="./favicon.svg" alt="PlantUML Logo" />
-                                <p>Chartre is ready.<br>Type PlantUML code or choose a Template to begin.</p>
+                                <img class="empty-icon" src="./favicon.svg" alt="Chartre Logo" />
+                                <p>Chartre is ready.<br>Type PlantUML/Mermaid code or choose a Template to begin.</p>
                             </div>
                         ` : html`
-                            <div class="diagram-paper" style="${`width: ${paperWidthPercent}%; min-width: ${paperWidthPercent}%;`}">
-                                <div class="notation-display"></div>
-                            </div>
+                            ${!this.error ? html`
+                                <div class="diagram-paper">
+                                    <div class="notation-display"></div>
+                                </div>
+                            ` : ''}
                         `}
 
                         ${this.error ? html`
