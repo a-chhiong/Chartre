@@ -1,25 +1,54 @@
-import mermaid from 'mermaid';
-
-// Initialize mermaid with basic options
-mermaid.initialize({
-    startOnLoad: false,
-    securityLevel: 'loose',
-    theme: document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'default',
-});
-
-let plantumlRender;
-async function loadPlantUMLRenderer() {
-    if (!plantumlRender) {
-        // Load the Graphviz layout engine and expose it globally (required by PlantUML)
-        const viz = await import('@plantuml/core/viz-global.js');
-        window.Viz = viz.default || viz;
-        console.log("PlantUML layout engine (window.Viz) initialized:", window.Viz);
-        
-        // Load the PlantUML core engine
-        const module = await import('@plantuml/core');
-        plantumlRender = module.renderToString || module.render;
+let plantumlLoadingPromise = null;
+let plantumlRender = null;
+export function loadPlantUMLRenderer() {
+    if (plantumlRender) return Promise.resolve(plantumlRender);
+    if (!plantumlLoadingPromise) {
+        plantumlLoadingPromise = (async () => {
+            // Load the Graphviz layout engine and expose it globally (required by PlantUML)
+            const viz = await import('@plantuml/core/viz-global.js');
+            window.Viz = viz.default || viz;
+            console.log("PlantUML layout engine (window.Viz) initialized:", window.Viz);
+            
+            // Load the PlantUML core engine
+            const module = await import('@plantuml/core');
+            plantumlRender = module.renderToString || module.render;
+            return plantumlRender;
+        })();
     }
-    return plantumlRender;
+    return plantumlLoadingPromise;
+}
+
+let mermaidLoadingPromise = null;
+let mermaidInstance = null;
+export function loadMermaid() {
+    if (mermaidInstance) return Promise.resolve(mermaidInstance);
+    if (!mermaidLoadingPromise) {
+        mermaidLoadingPromise = (async () => {
+            const module = await import('mermaid');
+            mermaidInstance = module.default || module;
+            
+            // Initialize mermaid with basic options
+            mermaidInstance.initialize({
+                startOnLoad: false,
+                securityLevel: 'loose',
+                theme: document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'default',
+            });
+            return mermaidInstance;
+        })();
+    }
+    return mermaidLoadingPromise;
+}
+
+export async function initializeEngines() {
+    try {
+        await Promise.all([
+            loadPlantUMLRenderer(),
+            loadMermaid()
+        ]);
+        console.log("Diagram engines pre-initialized successfully");
+    } catch (err) {
+        console.error("Failed to pre-initialize diagram engines:", err);
+    }
 }
 
 export function detectDiagramType(code) {
@@ -157,15 +186,20 @@ export class DiagramCompilerController {
         }
     }
 
-    _onThemeChanged(e) {
+    async _onThemeChanged(e) {
         const theme = e.detail.theme;
-        mermaid.initialize({
-            theme: theme === 'dark' ? 'dark' : 'default',
-        });
-        
-        // Recompile if we have code
-        if (this.host.umlCode) {
-            this.compile(this.host.umlCode);
+        try {
+            const m = await loadMermaid();
+            m.initialize({
+                theme: theme === 'dark' ? 'dark' : 'default',
+            });
+            
+            // Recompile if we have code
+            if (this.host.umlCode) {
+                this.compile(this.host.umlCode);
+            }
+        } catch (err) {
+            console.error("Failed to update Mermaid theme:", err);
         }
     }
 
@@ -257,7 +291,8 @@ export class DiagramCompilerController {
                 const badge = document.getElementById('dmermaid-svg');
                 if (badge) badge.remove();
 
-                const { svg } = await mermaid.render(id, trimmedCode);
+                const m = await loadMermaid();
+                const { svg } = await m.render(id, trimmedCode);
                 if (this._compileTimeout) {
                     clearTimeout(this._compileTimeout);
                     this._compileTimeout = null;

@@ -746,7 +746,15 @@ export class PreviewComponent extends LitElement {
             modal.svgNode = svg;
             document.body.appendChild(modal);
         } else {
-            alert('Please create a diagram first!');
+            this.dispatchEvent(new CustomEvent('show-confirm', {
+                detail: {
+                    title: 'Notice',
+                    message: 'Please create a diagram first!',
+                    isAlert: true
+                },
+                bubbles: true,
+                composed: true
+            }));
         }
     }
 
@@ -759,7 +767,15 @@ export class PreviewComponent extends LitElement {
     handleExportSVG() {
         const svg = this.shadowRoot.querySelector('.notation-display svg');
         if (!svg) {
-            alert('Please create a diagram first!');
+            this.dispatchEvent(new CustomEvent('show-confirm', {
+                detail: {
+                    title: 'Notice',
+                    message: 'Please create a diagram first!',
+                    isAlert: true
+                },
+                bubbles: true,
+                composed: true
+            }));
             return;
         }
 
@@ -783,14 +799,30 @@ export class PreviewComponent extends LitElement {
             document.body.removeChild(link);
             URL.revokeObjectURL(url);
         } catch (error) {
-            alert('Failed to export SVG: ' + error.message);
+            this.dispatchEvent(new CustomEvent('show-confirm', {
+                detail: {
+                    title: 'Export Failed',
+                    message: 'Failed to export SVG: ' + error.message,
+                    isAlert: true
+                },
+                bubbles: true,
+                composed: true
+            }));
         }
     }
 
     handleCopySVG() {
         const svg = this.shadowRoot.querySelector('.notation-display svg');
         if (!svg) {
-            alert('Please create a diagram first!');
+            this.dispatchEvent(new CustomEvent('show-confirm', {
+                detail: {
+                    title: 'Notice',
+                    message: 'Please create a diagram first!',
+                    isAlert: true
+                },
+                bubbles: true,
+                composed: true
+            }));
             return;
         }
 
@@ -801,7 +833,15 @@ export class PreviewComponent extends LitElement {
             }
             const svgString = new XMLSerializer().serializeToString(clone);
             navigator.clipboard.writeText(svgString).then(() => {
-                alert('✓ SVG code copied to clipboard!');
+                this.dispatchEvent(new CustomEvent('show-confirm', {
+                    detail: {
+                        title: 'Success',
+                        message: '✓ SVG code copied to clipboard!',
+                        isAlert: true
+                    },
+                    bubbles: true,
+                    composed: true
+                }));
             }).catch(err => {
                 console.error("Clipboard API failed, trying fallback:", err);
                 const textarea = document.createElement('textarea');
@@ -810,10 +850,26 @@ export class PreviewComponent extends LitElement {
                 textarea.select();
                 document.execCommand('copy');
                 document.body.removeChild(textarea);
-                alert('✓ SVG code copied to clipboard!');
+                this.dispatchEvent(new CustomEvent('show-confirm', {
+                    detail: {
+                        title: 'Success',
+                        message: '✓ SVG code copied to clipboard!',
+                        isAlert: true
+                    },
+                    bubbles: true,
+                    composed: true
+                }));
             });
         } catch (error) {
-            alert('Failed to copy SVG: ' + error.message);
+            this.dispatchEvent(new CustomEvent('show-confirm', {
+                detail: {
+                    title: 'Copy Failed',
+                    message: 'Failed to copy SVG: ' + error.message,
+                    isAlert: true
+                },
+                bubbles: true,
+                composed: true
+            }));
         }
     }
 

@@ -1,5 +1,6 @@
 import { LitElement, html, css } from 'lit';
 import LZString from 'lz-string';
+import { initializeEngines } from './diagram-controller.js';
 
 export class AppComponent extends LitElement {
     static properties = {
@@ -8,7 +9,15 @@ export class AppComponent extends LitElement {
         isError: { type: Boolean },
         splitPercentage: { type: Number },
         isDragging: { type: Boolean },
-        isDesktop: { type: Boolean }
+        isDesktop: { type: Boolean },
+        confirmTitle: { type: String, state: true },
+        confirmMessage: { type: String, state: true },
+        confirmText: { type: String, state: true },
+        confirmCancelText: { type: String, state: true },
+        confirmVariant: { type: String, state: true },
+        isConfirmOpen: { type: Boolean, state: true },
+        isLoading: { type: Boolean, state: true },
+        progress: { type: Number, state: true }
     };
 
     static styles = css`
@@ -181,6 +190,17 @@ export class AppComponent extends LitElement {
             0%, 100% { opacity: 0.4; }
             50% { opacity: 1; }
         }
+
+        app-loader {
+            opacity: 1;
+            transition: opacity 0.5s ease, visibility 0.5s;
+            visibility: visible;
+        }
+        app-loader.fade-out {
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+        }
     `;
 
     constructor() {
@@ -199,6 +219,18 @@ export class AppComponent extends LitElement {
         this.splitPercentage = 50; // default 50/50 split
         this.isDragging = false;
         this.isDesktop = this._checkIsDesktop();
+
+        // Confirmation dialog states
+        this.confirmTitle = 'Confirm';
+        this.confirmMessage = '';
+        this.confirmText = 'Confirm';
+        this.confirmCancelText = 'Cancel';
+        this.confirmVariant = 'primary';
+        this.isConfirmOpen = false;
+        this._onConfirmCallback = null;
+
+        this.isLoading = true;
+        this.progress = 0;
     }
 
     _checkIsDesktop() {
@@ -217,6 +249,38 @@ export class AppComponent extends LitElement {
             this.requestUpdate();
         };
         window.addEventListener('resize', this._onWindowResize);
+
+        this._initEngines();
+    }
+
+    async _initEngines() {
+        const initPromise = initializeEngines();
+
+        // Progress sweeps to 90% organically over approx 2 seconds
+        this._progressInterval = setInterval(() => {
+            if (this.progress < 90) {
+                const inc = Math.random() * 2 + 1;
+                this.progress = Math.min(90, this.progress + inc);
+            } else {
+                clearInterval(this._progressInterval);
+            }
+        }, 30);
+
+        try {
+            await initPromise;
+        } catch (err) {
+            console.error("Failed to initialize diagram engines:", err);
+        } finally {
+            clearInterval(this._progressInterval);
+
+            // Fast forward progress to 100%
+            this.progress = 100;
+
+            // Wait for the width transition to complete before initiating the opacity fade-out
+            setTimeout(() => {
+                this.isLoading = false;
+            }, 300);
+        }
     }
 
     disconnectedCallback() {
@@ -338,13 +402,35 @@ note over Renderer: Runs completely in your browser!\\nNo server requests.
         this.isError = e.detail.isError;
     }
 
+    handleShowConfirm(e) {
+        const { title, message, confirmText, cancelText, onConfirm, isAlert, variant } = e.detail;
+        this.confirmTitle = title || (isAlert ? 'Notice' : 'Confirm');
+        this.confirmMessage = message || '';
+        this.confirmText = confirmText || (isAlert ? 'OK' : 'Confirm');
+        this.confirmCancelText = isAlert ? '' : (cancelText || 'Cancel');
+        this.confirmVariant = variant || (isAlert ? 'primary' : 'danger');
+        this._onConfirmCallback = onConfirm;
+        this.isConfirmOpen = true;
+    }
+
+    handleConfirmDialogConfirm() {
+        if (this._onConfirmCallback) {
+            this._onConfirmCallback();
+        }
+        this.isConfirmOpen = false;
+    }
+
+    handleConfirmDialogCancel() {
+        this.isConfirmOpen = false;
+    }
+
     render() {
         const statusClass = this.isError
             ? 'error'
             : (this.status === 'Compiling...' ? 'compiling' : 'ready');
 
         return html`
-            <div class="app-container ${this.isDesktop ? 'layout-desktop' : 'layout-mobile'}">
+            <div class="app-container ${this.isDesktop ? 'layout-desktop' : 'layout-mobile'}" @show-confirm="${this.handleShowConfirm}">
                 <header-component
                     .umlCode="${this.umlCode}"
                     @uml-changed="${this.handleUMLChanged.bind(this)}"
@@ -375,7 +461,25 @@ note over Renderer: Runs completely in your browser!\\nNo server requests.
                     <span class="status-indicator ${statusClass}"></span>
                     <span class="status-text">${this.status}</span>
                 </footer>
+
+                <sl-dialog 
+                    label="${this.confirmTitle || 'Confirm'}" 
+                    ?open="${this.isConfirmOpen}"
+                    @sl-request-close="${this.handleConfirmDialogCancel}"
+                >
+                    <div style="display: flex; align-items: flex-start; gap: 12px; margin-bottom: 16px;">
+                        <span style="font-size: 1.5rem; line-height: 1;">⚠️</span>
+                        <div>
+                            ${this.confirmMessage}
+                        </div>
+                    </div>
+                    <sl-button slot="footer" variant="${this.confirmVariant || 'primary'}" @click="${this.handleConfirmDialogConfirm}">${this.confirmText || 'Confirm'}</sl-button>
+                    ${this.confirmCancelText ? html`
+                        <sl-button slot="footer" variant="neutral" @click="${this.handleConfirmDialogCancel}">${this.confirmCancelText}</sl-button>
+                    ` : ''}
+                </sl-dialog>
             </div>
+            <app-loader class="${this.isLoading ? '' : 'fade-out'}" .progress="${this.progress}"></app-loader>
         `;
     }
 }

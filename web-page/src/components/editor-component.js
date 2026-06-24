@@ -530,7 +530,15 @@ export class EditorComponent extends LitElement {
 
     handleSaveUMLFile() {
         if (!this.umlCode || !this.umlCode.trim()) {
-            alert('Please write some diagram code first!');
+            this.dispatchEvent(new CustomEvent('show-confirm', {
+                detail: {
+                    title: 'Notice',
+                    message: 'Please write some diagram code first!',
+                    isAlert: true
+                },
+                bubbles: true,
+                composed: true
+            }));
             return;
         }
 
@@ -552,17 +560,35 @@ export class EditorComponent extends LitElement {
             document.body.removeChild(link);
             URL.revokeObjectURL(url);
         } catch (error) {
-            alert('Failed to save file: ' + error.message);
+            this.dispatchEvent(new CustomEvent('show-confirm', {
+                detail: {
+                    title: 'Error Saving File',
+                    message: 'Failed to save file: ' + error.message,
+                    isAlert: true
+                },
+                bubbles: true,
+                composed: true
+            }));
         }
     }
 
     handleClear() {
         if (!this.umlCode || !this.umlCode.trim()) return;
 
-        if (confirm('⚠️ WARNING: This will delete everything in the editor.\n\nAre you sure you want to clear all contents? This action cannot be undone.')) {
-            this.umlCode = '';
-            this._dispatchUMLChanged('');
-        }
+        this.dispatchEvent(new CustomEvent('show-confirm', {
+            detail: {
+                title: 'Confirm Clear',
+                message: 'This will delete everything in the editor. Are you sure you want to clear all contents? This action cannot be undone.',
+                confirmText: 'Clear Editor',
+                cancelText: 'Cancel',
+                onConfirm: () => {
+                    this.umlCode = '';
+                    this._dispatchUMLChanged('');
+                }
+            },
+            bubbles: true,
+            composed: true
+        }));
     }
 
     handlePresetChange(e) {

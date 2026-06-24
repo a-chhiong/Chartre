@@ -236,7 +236,11 @@ export class HeaderComponent extends LitElement {
     toggleTheme() {
         const newTheme = this.currentTheme === 'light' ? 'dark' : 'light';
         document.documentElement.setAttribute('data-theme', newTheme);
-        localStorage.setItem('chartreTheme', newTheme);
+        if (newTheme === 'dark') {
+            document.documentElement.classList.add('sl-theme-dark');
+        } else {
+            document.documentElement.classList.remove('sl-theme-dark');
+        }
         localStorage.setItem('chartreTheme', newTheme);
         this.currentTheme = newTheme;
 
