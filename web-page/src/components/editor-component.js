@@ -1,6 +1,6 @@
 import { LitElement, html, css } from 'lit';
 import { unsafeHTML } from 'lit/directives/unsafe-html.js';
-import { detectDiagramType } from './diagram-controller.js';
+import { detectDiagramType } from '../services/diagram-engine.js';
 import { PLANTUML_PRESETS, MERMAID_PRESETS } from '../../public/syntax-template.js';
 
 // Import PrismJS core and language definitions
@@ -676,7 +676,7 @@ export class EditorComponent extends LitElement {
                             <pre class="editor-highlight-pre" aria-hidden="true"><code class="language-${type || 'text'}">${this.getHighlightedCode()}</code></pre>
                             <textarea
                                 class="editor-input"
-                                placeholder="Write your PlantUML or Mermaid here (e.g. starting with @startuml or flowchart TD)..."
+                                placeholder="Write your PlantUML or Mermaid code here..."
                                 spellcheck="false"
                                 wrap="off"
                                 .value="${this.umlCode}"

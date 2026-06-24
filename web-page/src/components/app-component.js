@@ -1,6 +1,6 @@
 import { LitElement, html, css } from 'lit';
 import LZString from 'lz-string';
-import { initializeEngines } from './diagram-controller.js';
+import { initializeEngines } from '../services/diagram-engine.js';
 
 export class AppComponent extends LitElement {
     static properties = {
@@ -205,13 +205,7 @@ export class AppComponent extends LitElement {
 
     constructor() {
         super();
-        let code = this._loadFromUrl() || this._loadFromStorage() || this._getDefaultUML();
-
-        // Auto-heal local storage if it contains the old buggy welcome text
-        if (code && code.includes("note over Renderer: No server requests!\nRuns completely in your browser.")) {
-            code = this._getDefaultUML();
-            localStorage.setItem('chartreCode', code);
-        }
+        let code = this._loadFromUrl() || this._loadFromStorage();
 
         this.umlCode = code;
         this.status = 'Ready';
@@ -363,26 +357,8 @@ export class AppComponent extends LitElement {
         return null;
     }
 
-    _getDefaultUML() {
-        return `@startuml
-title Welcome to Chartre
-
-actor User
-participant Editor as "Chartre UI"
-participant Renderer as "Client-side Engine"
-
-User -> Editor: Type code (PlantUML or Mermaid)
-Editor -> Renderer: Send code lines
-Renderer -> Renderer: Compile diagram client-side
-Renderer --> Editor: SVG output
-Editor --> User: Show interactive diagram
-
-note over Renderer: Runs completely in your browser!\\nNo server requests.
-@enduml`;
-    }
-
     _loadFromStorage() {
-        return localStorage.getItem('chartreCode') || localStorage.getItem('plantumlCode');
+        return localStorage.getItem('chartreCode');
     }
 
     handleUMLChanged(e) {

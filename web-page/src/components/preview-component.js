@@ -1,5 +1,5 @@
 import { LitElement, html, css } from 'lit';
-import { DiagramCompilerController } from './diagram-controller.js';
+import { PreviewController } from './preview-controller.js';
 
 export class PreviewComponent extends LitElement {
     static properties = {
@@ -484,15 +484,15 @@ export class PreviewComponent extends LitElement {
 
         this._renderTimeout = null;
         this._lastSvgString = null;
-        this.compiler = new DiagramCompilerController(this);
+        this.controller = new PreviewController(this);
     }
 
     get compiling() {
-        return this.compiler.compiling;
+        return this.controller.compiling;
     }
 
     get error() {
-        return this.compiler.error;
+        return this.controller.error;
     }
 
     disconnectedCallback() {
@@ -508,11 +508,11 @@ export class PreviewComponent extends LitElement {
                 clearTimeout(this._renderTimeout);
             }
             this._renderTimeout = setTimeout(() => {
-                this.compiler.compile(this.umlCode);
+                this.controller.compile(this.umlCode);
             }, 250); // Debounce diagram rendering slightly for typing smoothness
         }
 
-        const currentSvgString = this.compiler.svgString;
+        const currentSvgString = this.controller.svgString;
         if (currentSvgString !== this._lastSvgString) {
             this._lastSvgString = currentSvgString;
             if (currentSvgString) {
