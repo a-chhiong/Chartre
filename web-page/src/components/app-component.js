@@ -299,10 +299,10 @@ export class AppComponent extends LitElement {
 
     _getDefaultUML() {
         return `@startuml
-title Welcome to PlantEditor
+title Welcome to Chartre
 
 actor User
-participant Editor as "PlantEditor UI"
+participant Editor as "Chartre UI"
 participant Renderer as "Client-side Engine"
 
 User -> Editor: Type PlantUML code

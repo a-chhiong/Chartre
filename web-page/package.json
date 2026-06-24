@@ -1,7 +1,7 @@
 {
-  "name": "stave-editor",
+  "name": "chartre",
   "version": "1.0.0",
-  "description": "Premium ABC Notation Editor Custom Framework",
+  "description": "Premium Diagram Workspace",
   "main": "src/main.js",
   "scripts": {
     "dev": "vite",

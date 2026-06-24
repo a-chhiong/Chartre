@@ -1,6 +1,6 @@
-# PlantEditor — Premium Client-Side PlantUML Workspace
+# Chartre — Premium Client-Side PlantUML Workspace
 
-**PlantEditor** is a state-of-the-art, fully client-side PlantUML editor and previewer that runs entirely in the browser. Powered by Graphviz WebAssembly (`viz-global.js`) and Java-to-JS compiled PlantUML (`plantuml.js`), it processes and renders diagrams locally with zero external API calls or server dependencies—ensuring complete privacy and ultra-fast preview rendering.
+**Chartre** is a state-of-the-art, fully client-side PlantUML editor and previewer that runs entirely in the browser. Powered by Graphviz WebAssembly (`viz-global.js`) and Java-to-JS compiled PlantUML (`plantuml.js`), it processes and renders diagrams locally with zero external API calls or server dependencies—ensuring complete privacy and ultra-fast preview rendering.
 
 ---
 

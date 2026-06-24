@@ -251,7 +251,7 @@ export class EditorComponent extends LitElement {
     constructor() {
         super();
         this.umlCode = '';
-        this.showLineNumbers = localStorage.getItem('plantEditorShowLineNumbers') !== 'false';
+        this.showLineNumbers = localStorage.getItem('chartreShowLineNumbers') !== 'false';
         this.lineNumbers = [];
     }
 
@@ -274,7 +274,7 @@ export class EditorComponent extends LitElement {
 
     toggleLineNumbers() {
         this.showLineNumbers = !this.showLineNumbers;
-        localStorage.setItem('plantEditorShowLineNumbers', String(this.showLineNumbers));
+        localStorage.setItem('chartreShowLineNumbers', String(this.showLineNumbers));
     }
 
     handleScroll(e) {

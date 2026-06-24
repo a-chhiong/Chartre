@@ -1,5 +1,5 @@
 // Initialize theme from localStorage, default to light
-const savedTheme = localStorage.getItem('plantEditorTheme') || localStorage.getItem('staveEditorTheme') || 'light';
+const savedTheme = localStorage.getItem('chartreTheme') || localStorage.getItem('chartreTheme') || 'light';
 document.documentElement.setAttribute('data-theme', savedTheme);
 
 // Bootstrap - Import and register all components

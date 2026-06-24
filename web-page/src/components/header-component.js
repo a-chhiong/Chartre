@@ -124,7 +124,7 @@ Billing ..> Cache : Read/Write session
 @enduml`,
 
     mindmap: `@startmindmap
-* PlantEditor Project
+* Chartre Project
 ** Core Engine
 *** Viz.js (Graphviz)
 *** PlantUML compilation (TeaVM)
@@ -447,8 +447,8 @@ export class HeaderComponent extends LitElement {
     toggleTheme() {
         const newTheme = this.currentTheme === 'light' ? 'dark' : 'light';
         document.documentElement.setAttribute('data-theme', newTheme);
-        localStorage.setItem('plantEditorTheme', newTheme);
-        localStorage.setItem('staveEditorTheme', newTheme);
+        localStorage.setItem('chartreTheme', newTheme);
+        localStorage.setItem('chartreTheme', newTheme);
         this.currentTheme = newTheme;
 
         // Dispatch a global event so that dynamic assets (like diagrams) can render with correct theme options
@@ -478,7 +478,7 @@ export class HeaderComponent extends LitElement {
             <div class="header-container">
                 <div class="logo-area">
                     <img class="logo-img" src="./favicon.svg" alt="PlantUML Logo" />
-                    <span class="logo-title">PlantEditor</span>
+                    <span class="logo-title">Chartre</span>
                     <span class="logo-subtitle">PlantUML Workspace</span>
                 </div>
  

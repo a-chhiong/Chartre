@@ -756,7 +756,7 @@ export class PreviewComponent extends LitElement {
                         ${!hasCode ? html`
                             <div class="empty-state">
                                 <img class="empty-icon" src="./favicon.svg" alt="PlantUML Logo" />
-                                <p>PlantEditor is ready.<br>Type PlantUML code or choose a Template to begin.</p>
+                                <p>Chartre is ready.<br>Type PlantUML code or choose a Template to begin.</p>
                             </div>
                         ` : html`
                             <div class="diagram-paper" style="${`width: ${paperWidthPercent}%; min-width: ${paperWidthPercent}%;`}">
