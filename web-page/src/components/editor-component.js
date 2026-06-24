@@ -1,6 +1,13 @@
 import { LitElement, html, css } from 'lit';
+import { unsafeHTML } from 'lit/directives/unsafe-html.js';
 import { detectDiagramType } from './diagram-controller.js';
 import { PRESETS } from '../../public/syntax-template.js';
+
+// Import PrismJS core and language definitions
+import Prism from 'prismjs';
+import 'prismjs/components/prism-clike.js';
+import 'prismjs/components/prism-plant-uml.js';
+import 'prismjs/components/prism-mermaid.js';
 
 export class EditorComponent extends LitElement {
     static properties = {
@@ -194,31 +201,108 @@ export class EditorComponent extends LitElement {
             position: relative;
         }
 
-        .editor-input {
-            flex: 1;            /* Take up remaining width horizontally */
-            width: 100%;
+        .editor-highlight-container {
+            position: relative;
+            flex: 1;
             height: 100%;
-            min-height: 0;      /* Force overflow boundaries */
+            min-height: 0;
             min-width: 0;
-            padding: 16px;
-            font-family: var(--font-code);
-            font-size: 0.85rem;
-            color: var(--text-primary);
-            background: transparent;
-            border: none;
-            resize: none;
-            line-height: 1.6;
-            outline: none;
-            overflow-y: auto;
-            overflow-x: auto;
-            white-space: pre;
-            word-wrap: normal;
-            tab-size: 4;
-            caret-color: var(--accent-violet);
-            box-sizing: border-box; /* Essential so padding doesn't create extra scrolling artifacts */
         }
 
+        .editor-highlight-pre,
+        .editor-input {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 16px;
+            box-sizing: border-box;
+            font-family: var(--font-code);
+            font-size: 0.85rem;
+            line-height: 1.6;
+            tab-size: 4;
+            white-space: pre;
+            word-wrap: normal;
+            overflow: auto;
+            border: none;
+            outline: none;
+            background: transparent;
+        }
 
+        .editor-highlight-pre {
+            color: var(--text-primary);
+            z-index: 1;
+            pointer-events: none;
+            scrollbar-width: none; /* Firefox */
+            -ms-overflow-style: none; /* IE 10+ */
+        }
+
+        .editor-highlight-pre::-webkit-scrollbar {
+            display: none; /* WebKit */
+        }
+
+        .editor-highlight-pre code {
+            font-family: inherit;
+            font-size: inherit;
+            line-height: inherit;
+            padding: 0;
+            margin: 0;
+            background: none;
+            border: none;
+            display: block;
+        }
+
+        .editor-input {
+            color: transparent;
+            caret-color: var(--accent-violet);
+            z-index: 2;
+            resize: none;
+        }
+
+        /* Prism Syntax Token Themes */
+        .editor-highlight-pre .token.comment {
+            color: var(--code-comment);
+            font-style: italic;
+        }
+
+        .editor-highlight-pre .token.keyword {
+            color: var(--code-keyword);
+            font-weight: bold;
+        }
+
+        .editor-highlight-pre .token.string {
+            color: var(--code-string);
+        }
+
+        .editor-highlight-pre .token.operator {
+            color: var(--code-operator);
+        }
+
+        .editor-highlight-pre .token.punctuation {
+            color: var(--code-punctuation);
+        }
+
+        .editor-highlight-pre .token.arrow,
+        .editor-highlight-pre .token.operator-arrow {
+            color: var(--code-operator);
+            font-weight: bold;
+        }
+
+        .editor-highlight-pre .token.variable,
+        .editor-highlight-pre .token.entity {
+            color: var(--code-variable);
+        }
+
+        .editor-highlight-pre .token.class-name {
+            color: var(--code-class);
+        }
+
+        .editor-highlight-pre .token.number,
+        .editor-highlight-pre .token.boolean {
+            color: var(--code-number);
+        }
 
         @media (max-width: 768px) {
             .editor-header {
@@ -232,7 +316,7 @@ export class EditorComponent extends LitElement {
                 font-size: 0.75rem;
             }
 
-            .editor-input {
+            .editor-highlight-pre, .editor-input {
                 font-size: 0.8rem;
                 padding: 12px;
             }
@@ -317,11 +401,17 @@ export class EditorComponent extends LitElement {
     }
 
     updated(changedProperties) {
-        if (changedProperties.has('showLineNumbers') && this.showLineNumbers) {
-            const textarea = this.shadowRoot.querySelector('.editor-input');
+        // Sync scroll positions after any update to ensure alignment
+        const textarea = this.shadowRoot.querySelector('.editor-input');
+        if (textarea) {
             const gutter = this.shadowRoot.querySelector('.line-numbers-gutter');
-            if (textarea && gutter) {
+            if (gutter && this.showLineNumbers) {
                 gutter.scrollTop = textarea.scrollTop;
+            }
+            const backdrop = this.shadowRoot.querySelector('.editor-highlight-pre');
+            if (backdrop) {
+                backdrop.scrollTop = textarea.scrollTop;
+                backdrop.scrollLeft = textarea.scrollLeft;
             }
         }
     }
@@ -337,6 +427,42 @@ export class EditorComponent extends LitElement {
         if (gutter) {
             gutter.scrollTop = textarea.scrollTop;
         }
+        const backdrop = this.shadowRoot.querySelector('.editor-highlight-pre');
+        if (backdrop) {
+            backdrop.scrollTop = textarea.scrollTop;
+            backdrop.scrollLeft = textarea.scrollLeft;
+        }
+    }
+
+    getHighlightedCode() {
+        let code = this.umlCode || '';
+        
+        // If code ends with a newline, append a trailing space to prevent scroll height mismatch
+        if (code.endsWith('\n')) {
+            code += ' ';
+        }
+
+        const type = detectDiagramType(code);
+
+        if (type === 'plantuml') {
+            try {
+                return unsafeHTML(Prism.highlight(code, Prism.languages.plantuml, 'plantuml'));
+            } catch (err) {
+                console.error("Prism PlantUML highlighting failed:", err);
+            }
+        } else if (type === 'mermaid') {
+            try {
+                return unsafeHTML(Prism.highlight(code, Prism.languages.mermaid, 'mermaid'));
+            } catch (err) {
+                console.error("Prism Mermaid highlighting failed:", err);
+            }
+        }
+
+        const escaped = code
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;');
+        return unsafeHTML(escaped);
     }
 
 
@@ -494,15 +620,18 @@ export class EditorComponent extends LitElement {
                                 ${this.lineNumbers.map(n => html`<div>${n}</div>`)}
                             </div>
                         ` : ''}
-                        <textarea
-                            class="editor-input"
-                            placeholder="Write your PlantUML or Mermaid here (e.g. starting with @startuml or flowchart TD)..."
-                            spellcheck="false"
-                            wrap="off"
-                            .value="${this.umlCode}"
-                            @input="${this.handleInput.bind(this)}"
-                            @scroll="${this.handleScroll}"
-                        ></textarea>
+                        <div class="editor-highlight-container">
+                            <pre class="editor-highlight-pre" aria-hidden="true"><code class="language-${type || 'text'}">${this.getHighlightedCode()}</code></pre>
+                            <textarea
+                                class="editor-input"
+                                placeholder="Write your PlantUML or Mermaid here (e.g. starting with @startuml or flowchart TD)..."
+                                spellcheck="false"
+                                wrap="off"
+                                .value="${this.umlCode}"
+                                @input="${this.handleInput.bind(this)}"
+                                @scroll="${this.handleScroll}"
+                            ></textarea>
+                        </div>
                     </div>
                 </div>
             </div>

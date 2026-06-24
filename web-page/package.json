@@ -11,7 +11,8 @@
   "dependencies": {
     "lit": "^3.1.2",
     "lz-string": "^1.5.0",
-    "mermaid": "^11.15.0"
+    "mermaid": "^11.15.0",
+    "prismjs": "^1.30.0"
   },
   "devDependencies": {
     "vite": "^5.2.0"
