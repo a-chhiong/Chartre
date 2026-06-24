@@ -1,7 +1,7 @@
 import { LitElement, html, css } from 'lit';
 import { unsafeHTML } from 'lit/directives/unsafe-html.js';
 import { detectDiagramType } from './diagram-controller.js';
-import { PRESETS } from '../../public/syntax-template.js';
+import { PLANTUML_PRESETS, MERMAID_PRESETS } from '../../public/syntax-template.js';
 
 // Import PrismJS core and language definitions
 import Prism from 'prismjs';
@@ -13,7 +13,8 @@ export class EditorComponent extends LitElement {
     static properties = {
         umlCode: { type: String },
         showLineNumbers: { type: Boolean },
-        lineNumbers: { type: Array, state: true }
+        lineNumbers: { type: Array, state: true },
+        selectedPreset: { type: String, state: true }
     };
 
     static styles = css`
@@ -84,7 +85,7 @@ export class EditorComponent extends LitElement {
             cursor: pointer;
             transition: all var(--transition-fast);
             outline: none;
-            max-width: 200px;
+            max-width: 125px;
             white-space: nowrap;
             box-sizing: border-box;
         }
@@ -391,12 +392,33 @@ export class EditorComponent extends LitElement {
         this.umlCode = '';
         this.showLineNumbers = localStorage.getItem('chartreShowLineNumbers') !== 'false';
         this.lineNumbers = [];
+        this.selectedPreset = '';
     }
 
     willUpdate(changedProperties) {
         if (changedProperties.has('umlCode')) {
             const lineCount = Math.max(1, (this.umlCode || '').split('\n').length);
             this.lineNumbers = Array.from({ length: lineCount }, (_, i) => i + 1);
+
+            // Check if current code exactly matches a preset to highlight the active selection
+            let matchedPreset = '';
+            if (this.umlCode) {
+                for (const [key, val] of Object.entries(PLANTUML_PRESETS)) {
+                    if (this.umlCode === val) {
+                        matchedPreset = 'plantuml:' + key;
+                        break;
+                    }
+                }
+                if (!matchedPreset) {
+                    for (const [key, val] of Object.entries(MERMAID_PRESETS)) {
+                        if (this.umlCode === val) {
+                            matchedPreset = 'mermaid:' + key;
+                            break;
+                        }
+                    }
+                }
+            }
+            this.selectedPreset = matchedPreset;
         }
     }
 
@@ -436,7 +458,7 @@ export class EditorComponent extends LitElement {
 
     getHighlightedCode() {
         let code = this.umlCode || '';
-        
+
         // If code ends with a newline, append a trailing space to prevent scroll height mismatch
         if (code.endsWith('\n')) {
             code += ' ';
@@ -546,12 +568,19 @@ export class EditorComponent extends LitElement {
     handlePresetChange(e) {
         const val = e.target.value;
         if (!val) return;
-        const code = PRESETS[val];
+
+        const [type, key] = val.split(':');
+        let code = '';
+        if (type === 'mermaid') {
+            code = MERMAID_PRESETS[key];
+        } else if (type === 'plantuml') {
+            code = PLANTUML_PRESETS[key];
+        }
+
         if (code) {
             this.umlCode = code;
             this._dispatchUMLChanged(code);
         }
-        e.target.value = '';
     }
 
     render() {
@@ -567,25 +596,22 @@ export class EditorComponent extends LitElement {
                     </div>
                     
                     <div class="presets-wrapper">
-                        <select class="presets-select" @change="${this.handlePresetChange}" title="Load diagram template">
-                            <option value="" disabled selected>模板 (Templates)</option>
+                        <select 
+                            class="presets-select" 
+                            .value="${this.selectedPreset || ''}"
+                            @change="${this.handlePresetChange}" 
+                            title="Load diagram template"
+                        >
+                            <option value="" disabled ?selected="${!this.selectedPreset}">Templates</option>
                             <optgroup label="☕ PlantUML">
-                                <option value="sequence">☕ Sequence</option>
-                                <option value="class">☕ Class</option>
-                                <option value="usecase">☕ Use Case</option>
-                                <option value="activity">☕ Activity</option>
-                                <option value="state">☕ State</option>
-                                <option value="component">☕ Component</option>
-                                <option value="mindmap">☕ Mind-Map</option>
+                                ${Object.keys(PLANTUML_PRESETS).map(key => html`
+                                    <option value="plantuml:${key}">☕ ${key}</option>
+                                `)}
                             </optgroup>
                             <optgroup label="🧜‍♀️ Mermaid">
-                                <option value="mermaid_flowchart">🧜‍♀️ Flowchart</option>
-                                <option value="mermaid_sequence">🧜‍♀️ Sequence</option>
-                                <option value="mermaid_class">🧜‍♀️ Class</option>
-                                <option value="mermaid_state">🧜‍♀️ State</option>
-                                <option value="mermaid_er">🧜‍♀️ Entity Relationship</option>
-                                <option value="mermaid_gantt">🧜‍♀️ Gantt</option>
-                                <option value="mermaid_mindmap">🧜‍♀️ Mindmap</option>
+                                ${Object.keys(MERMAID_PRESETS).map(key => html`
+                                    <option value="mermaid:${key}">🧜‍♀️ ${key}</option>
+                                `)}
                             </optgroup>
                         </select>
                     </div>

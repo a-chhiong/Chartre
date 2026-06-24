@@ -1,6 +1,6 @@
-export const PRESETS = {
+export const PLANTUML_PRESETS = {
     // ☕ PlantUML Presets
-    sequence: `@startuml Sequence
+    Sequence: `@startuml Sequence
 title Online Shopping Sequence
 
 actor Customer
@@ -20,7 +20,7 @@ Portal -> DB: Decrement stock count
 Portal --> Customer: Show Order Confirmation page
 @enduml`,
 
-    class: `@startuml ClassDiagram
+    Class: `@startuml ClassDiagram
 title System Class Diagram
 
 interface Renderable {
@@ -43,7 +43,7 @@ Renderable <|.. Diagram
 User "1" *-- "many" Diagram : owns >
 @enduml`,
 
-    usecase: `@startuml UseCase
+    UseCase: `@startuml UseCase
 left to right direction
 actor Customer
 actor Admin
@@ -58,7 +58,7 @@ rectangle "Online Shop" {
 }
 @enduml`,
 
-    activity: `@startuml Activity
+    Activity: `@startuml Activity
 title Document Approval Process
 
 start
@@ -80,7 +80,7 @@ endif
 stop
 @enduml`,
 
-    state: `@startuml StateDiagram
+    State: `@startuml StateDiagram
 title Order Fulfillment State
 
 [*] --> Pending : Customer places order
@@ -97,7 +97,7 @@ Delivered --> [*]
 Cancelled --> [*]
 @enduml`,
 
-    component: `@startuml ComponentDiagram
+    Component: `@startuml ComponentDiagram
 title Microservice Architecture
 
 package "Frontend Client" {
@@ -121,7 +121,7 @@ GW --> Billing : Charge user
 Billing ..> Cache : Read/Write session
 @enduml`,
 
-    mindmap: `@startmindmap
+    MindMap: `@startmindmap
 * Chartre Project
 ** Core Engine
 *** Viz.js (Graphviz)
@@ -134,10 +134,12 @@ Billing ..> Cache : Read/Write session
 *** Live updates
 *** Shareable links
 *** Image exports (SVG / PNG)
-@endmindmap`,
+@endmindmap`
+};
 
+export const MERMAID_PRESETS = {
     // 🧜‍♀️ Mermaid Presets
-    mermaid_flowchart: `flowchart TD
+    FlowChart: `flowchart TD
     Start --> FindItem[Search for Item]
     FindItem --> CheckStock{In Stock?}
     CheckStock -- Yes --> Buy[Buy Item]
@@ -150,7 +152,7 @@ Billing ..> Cache : Read/Write session
     Fail --> End
     OutOfStock --> End`,
 
-    mermaid_sequence: `sequenceDiagram
+    Sequence: `sequenceDiagram
     actor Customer
     participant Portal as Web Portal
     participant DB as Inventory DB
@@ -167,7 +169,7 @@ Billing ..> Cache : Read/Write session
     Portal->>DB: Decrement stock count
     Portal-->>Customer: Show Order Confirmation page`,
 
-    mermaid_class: `classDiagram
+    Class: `classDiagram
     class Renderable {
         <<interface>>
         +render() SVG
@@ -185,7 +187,7 @@ Billing ..> Cache : Read/Write session
     Renderable <|.. Diagram
     User "1" *-- "many" Diagram : owns`,
 
-    mermaid_state: `stateDiagram-v2
+    State: `stateDiagram-v2
     [*] --> Pending : Customer places order
     
     state Pending {
@@ -199,19 +201,19 @@ Billing ..> Cache : Read/Write session
     Delivered --> [*]
     Cancelled --> [*]`,
 
-    mermaid_er: `erDiagram
+    ERD: `erDiagram
     CUSTOMER ||--o{ ORDER : places
     ORDER ||--|{ LINE-ITEM : contains
     CUSTOMER }|..|{ DELIVERY-ADDRESS : uses`,
 
-    mermaid_gantt: `gantt
+    Gantt: `gantt
     title A Gantt Diagram
     dateFormat YYYY-MM-DD
     section Section
     A task          :active, a1, 2026-06-20, 30d
     Another task    :after a1, 20d`,
 
-    mermaid_mindmap: `mindmap
+    MindMap: `mindmap
   root((Chartre))
     Core Engine
       Viz.js Graphviz

@@ -79,7 +79,7 @@ export class PreviewComponent extends LitElement {
             background: transparent;
             border: none;
             color: var(--text-secondary);
-            font-size: 0.75rem;
+            font-size: 1.0rem;
             cursor: pointer;
             width: 20px;
             height: 20px;
@@ -309,7 +309,7 @@ export class PreviewComponent extends LitElement {
             .zoom-btn, .zoom-reset-btn {
                 width: 16px;
                 height: 16px;
-                font-size: 0.65rem;
+                font-size: 1.0rem;
             }
 
             .zoom-value {
@@ -357,7 +357,7 @@ export class PreviewComponent extends LitElement {
             .zoom-btn, .zoom-reset-btn {
                 width: 20px;
                 height: 20px;
-                font-size: 0.75rem;
+                font-size: 1.0rem;
             }
 
             .zoom-value {
@@ -398,7 +398,7 @@ export class PreviewComponent extends LitElement {
             .zoom-btn, .zoom-reset-btn {
                 width: 14px;
                 height: 14px;
-                font-size: 0.6rem;
+                font-size: 1.0rem;
             }
 
             .zoom-value {
@@ -829,18 +829,11 @@ export class PreviewComponent extends LitElement {
                     </div>
                     
                     <div class="zoom-controls">
-                        <button class="zoom-btn" @click="${this.zoomOut}" ?disabled="${!hasCode || !!this.error}" title="Zoom Out">-</button>
+                        <button class="zoom-btn" @click="${this.zoomOut}" ?disabled="${!hasCode || !!this.error}" title="Zoom Out">－</button>
                         <span class="zoom-value">${zoomPct}%</span>
-                        <button class="zoom-btn" @click="${this.zoomIn}" ?disabled="${!hasCode || !!this.error}" title="Zoom In">+</button>
-                        <button class="zoom-reset-btn" @click="${this.resetZoom}" ?disabled="${!hasCode || !!this.error}" title="Actual Size (1:1)">1:1</button>
-                        <button class="zoom-reset-btn" @click="${this.fitToScreen}" ?disabled="${!hasCode || !!this.error}" title="Fit to Screen">
-                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display: block;">
-                                <polyline points="15 3 21 3 21 9"></polyline>
-                                <polyline points="9 21 3 21 3 15"></polyline>
-                                <line x1="21" y1="3" x2="14" y2="10"></line>
-                                <line x1="3" y1="21" x2="10" y2="14"></line>
-                            </svg>
-                        </button>
+                        <button class="zoom-btn" @click="${this.zoomIn}" ?disabled="${!hasCode || !!this.error}" title="Zoom In">＋</button>
+                        <button class="zoom-reset-btn" @click="${this.resetZoom}" ?disabled="${!hasCode || !!this.error}" title="Actual Size (1:1)">%</button>
+                        <button class="zoom-reset-btn" @click="${this.fitToScreen}" ?disabled="${!hasCode || !!this.error}" title="Fit to Screen">↹</button>
                     </div>
 
                     <div class="header-controls">

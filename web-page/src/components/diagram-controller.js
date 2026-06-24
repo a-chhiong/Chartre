@@ -10,9 +10,13 @@ mermaid.initialize({
 let plantumlRender;
 async function loadPlantUMLRenderer() {
     if (!plantumlRender) {
-        // Dynamic import resolved relative to the document base URI to handle subdirectory deployments
-        const libPath = new URL('./plantuml.js', document.baseURI).href;
-        const module = await import(/* @vite-ignore */ libPath);
+        // Load the Graphviz layout engine and expose it globally (required by PlantUML)
+        const viz = await import('@plantuml/core/viz-global.js');
+        window.Viz = viz.default || viz;
+        console.log("PlantUML layout engine (window.Viz) initialized:", window.Viz);
+        
+        // Load the PlantUML core engine
+        const module = await import('@plantuml/core');
         plantumlRender = module.renderToString || module.render;
     }
     return plantumlRender;
@@ -91,16 +95,55 @@ export class DiagramCompilerController {
         this.error = null;
         this.svgString = null;
         this.diagramType = null; // 'plantuml' | 'mermaid' | null
+        this._compileTimeout = null;
 
         this._onThemeChanged = this._onThemeChanged.bind(this);
+        this._onGlobalError = this._onGlobalError.bind(this);
+        this._onGlobalRejection = this._onGlobalRejection.bind(this);
     }
 
     hostConnected() {
         window.addEventListener('theme-changed', this._onThemeChanged);
+        window.addEventListener('error', this._onGlobalError);
+        window.addEventListener('unhandledrejection', this._onGlobalRejection);
     }
 
     hostDisconnected() {
         window.removeEventListener('theme-changed', this._onThemeChanged);
+        window.removeEventListener('error', this._onGlobalError);
+        window.removeEventListener('unhandledrejection', this._onGlobalRejection);
+        if (this._compileTimeout) {
+            clearTimeout(this._compileTimeout);
+            this._compileTimeout = null;
+        }
+    }
+
+    _onGlobalError(e) {
+        if (this.compiling) {
+            const errorMsg = e.message || (e.error && e.error.message) || String(e);
+            this._handleCompilationFailure(`Uncaught Engine Exception: ${errorMsg}`);
+        }
+    }
+
+    _onGlobalRejection(e) {
+        if (this.compiling) {
+            const reason = e.reason;
+            const errorMsg = reason ? (reason.message || String(reason)) : "Unhandled promise rejection";
+            this._handleCompilationFailure(`Uncaught Promise Rejection: ${errorMsg}`);
+        }
+    }
+
+    _handleCompilationFailure(errorMsg) {
+        console.error("Compilation crash intercepted:", errorMsg);
+        this.error = errorMsg;
+        this.svgString = null;
+        this.compiling = false;
+        if (this._compileTimeout) {
+            clearTimeout(this._compileTimeout);
+            this._compileTimeout = null;
+        }
+        this.host.requestUpdate();
+        this._dispatchStatus('✗ Engine Error', true);
     }
 
     hostUpdated() {
@@ -134,6 +177,10 @@ export class DiagramCompilerController {
             this.error = null;
             this.svgString = null;
             this.diagramType = null;
+            if (this._compileTimeout) {
+                clearTimeout(this._compileTimeout);
+                this._compileTimeout = null;
+            }
             this.host.requestUpdate();
             this._dispatchStatus('Ready', false);
             return;
@@ -147,6 +194,16 @@ export class DiagramCompilerController {
 
         this._dispatchStatus('Compiling...', false);
 
+        // Start safety timeout to prevent infinite loader (e.g. if engine blocks or hangs)
+        if (this._compileTimeout) {
+            clearTimeout(this._compileTimeout);
+        }
+        this._compileTimeout = setTimeout(() => {
+            if (this.compiling) {
+                this._handleCompilationFailure("Compilation Timeout: Diagram engine did not respond in time.");
+            }
+        }, 8000); // 8 seconds safety timeout
+
         if (type === 'plantuml') {
             try {
                 const render = await loadPlantUMLRenderer();
@@ -156,6 +213,10 @@ export class DiagramCompilerController {
                 render(
                     lines,
                     (svgOutput) => {
+                        if (this._compileTimeout) {
+                            clearTimeout(this._compileTimeout);
+                            this._compileTimeout = null;
+                        }
                         this.svgString = svgOutput;
                         this.error = null;
                         this.compiling = false;
@@ -163,6 +224,10 @@ export class DiagramCompilerController {
                         this._dispatchStatus('✓ Diagram Ready', false);
                     },
                     (err) => {
+                        if (this._compileTimeout) {
+                            clearTimeout(this._compileTimeout);
+                            this._compileTimeout = null;
+                        }
                         console.error("PlantUML compile error:", err);
                         this.error = err.message || String(err);
                         this.svgString = null;
@@ -173,6 +238,10 @@ export class DiagramCompilerController {
                     { dark: dark }
                 );
             } catch (err) {
+                if (this._compileTimeout) {
+                    clearTimeout(this._compileTimeout);
+                    this._compileTimeout = null;
+                }
                 console.error("Failed to load/run PlantUML compiler:", err);
                 this.error = err.message || String(err);
                 this.svgString = null;
@@ -189,12 +258,20 @@ export class DiagramCompilerController {
                 if (badge) badge.remove();
 
                 const { svg } = await mermaid.render(id, trimmedCode);
+                if (this._compileTimeout) {
+                    clearTimeout(this._compileTimeout);
+                    this._compileTimeout = null;
+                }
                 this.svgString = svg;
                 this.error = null;
                 this.compiling = false;
                 this.host.requestUpdate();
                 this._dispatchStatus('✓ Diagram Ready', false);
             } catch (err) {
+                if (this._compileTimeout) {
+                    clearTimeout(this._compileTimeout);
+                    this._compileTimeout = null;
+                }
                 console.error("Mermaid compile error:", err);
                 
                 // Extract error message
@@ -216,6 +293,10 @@ export class DiagramCompilerController {
                 this._dispatchStatus('✗ Compilation Error', true);
             }
         } else {
+            if (this._compileTimeout) {
+                clearTimeout(this._compileTimeout);
+                this._compileTimeout = null;
+            }
             // Neither detected
             this.svgString = null;
             this.compiling = false;
