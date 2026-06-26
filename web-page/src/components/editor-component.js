@@ -381,11 +381,10 @@ export class EditorComponent extends LitElement {
                     <div class="presets-wrapper">
                         <select 
                             class="presets-select" 
-                            .value="${ec.selectedPreset || ''}"
                             @change="${(e) => ec.handlePresetChange(e)}" 
                             title="Load diagram template"
                         >
-                            <option value="" disabled ?selected="${!ec.selectedPreset}">Templates</option>
+                            <option value="" disabled selected>Templates</option>
                             <optgroup label="☕ PlantUML">
                                 ${Object.keys(PLANTUML_PRESETS).map(key => html`
                                     <option value="plantuml:${key}">☕ ${key}</option>

@@ -10,7 +10,6 @@ export class EditorController {
         // Standalone editor configurations and logic streams
         this.showLineNumbers = localStorage.getItem('chartreShowLineNumbers') !== 'false';
         this.lineNumbers = [];
-        this.selectedPreset = '';
     }
 
     // Lit lifecycle hook that automatically runs before the host's render phase
@@ -20,26 +19,6 @@ export class EditorController {
         // 1. Calculate incremental line numbers
         const lineCount = Math.max(1, code.split('\n').length);
         this.lineNumbers = Array.from({ length: lineCount }, (_, i) => i + 1);
-
-        // 2. Identify if code matches any template presets
-        let matchedPreset = '';
-        if (code) {
-            for (const [key, val] of Object.entries(PLANTUML_PRESETS)) {
-                if (code === val) {
-                    matchedPreset = 'plantuml:' + key;
-                    break;
-                }
-            }
-            if (!matchedPreset) {
-                for (const [key, val] of Object.entries(MERMAID_PRESETS)) {
-                    if (code === val) {
-                        matchedPreset = 'mermaid:' + key;
-                        break;
-                    }
-                }
-            }
-        }
-        this.selectedPreset = matchedPreset;
     }
 
     // Handles the overlay backdrop scroll-alignment locking
@@ -192,5 +171,8 @@ export class EditorController {
         if (code) {
             this._dispatchUMLChanged(code);
         }
+
+        // Reset dropdown back to the "Templates" placeholder
+        e.target.selectedIndex = 0;
     }
 }
