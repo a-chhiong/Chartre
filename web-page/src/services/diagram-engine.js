@@ -34,6 +34,13 @@ export function loadMermaid() {
                 startOnLoad: false,
                 securityLevel: 'loose',
                 theme: document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'default',
+                fontFamily: 'Plus Jakarta Sans, system-ui, -apple-system, sans-serif',
+                sequence: {
+                    fontFamily: 'Plus Jakarta Sans, system-ui, -apple-system, sans-serif',
+                    actorFontFamily: 'Plus Jakarta Sans, system-ui, -apple-system, sans-serif',
+                    noteFontFamily: 'Plus Jakarta Sans, system-ui, -apple-system, sans-serif',
+                    messageFontFamily: 'Plus Jakarta Sans, system-ui, -apple-system, sans-serif',
+                },
             });
             return mermaidInstance;
         })();

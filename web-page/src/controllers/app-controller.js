@@ -67,8 +67,8 @@ export class AppController {
         try {
             await initPromise;
         } catch (err) {
-            console.error("Failed to initialize diagram engines:", err);
-        } {
+            console.warn('[Chartre] One or more engines failed to initialize:', err);
+        } finally {
             clearInterval(this._progressInterval);
             this.progress = 100;
             this.host.requestUpdate();

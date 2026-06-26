@@ -24,16 +24,20 @@ export class EditorComponent extends LitElement {
             min-height: 0;
             overflow: hidden;
 
-            /* Scoped Shiki Custom Theme Variable Token Definitions */
-            --code-token-keyword: #ff79c6;
-            --code-token-string: #f1fa8c;
-            --code-token-comment: #6272a4;
-            --code-token-punctuation: #f8f8f2;
-            --code-token-variable: #bd93f9;
-            --code-token-operator: #ffb86c;
-            --code-token-function: #50fa7b;
-            --code-token-constant: #bd93f9;
-            --code-token-class: #8be9fd;
+            /* Shiki CSS Variables Theme Token Definitions
+             * These map to the var(--code-*) tokens emitted by createCssVariablesTheme.
+             * Values reference the global design system in style.css for theme consistency. */
+            --code-foreground: var(--text-primary);
+            --code-token-keyword: var(--syntax-keyword);
+            --code-token-string: var(--syntax-string);
+            --code-token-string-expression: var(--syntax-string);
+            --code-token-comment: var(--syntax-comment);
+            --code-token-constant: var(--syntax-constant);
+            --code-token-function: var(--syntax-function);
+            --code-token-punctuation: var(--syntax-punctuation);
+            --code-token-variable: var(--syntax-variable);
+            --code-token-operator: var(--syntax-operator);
+            --code-token-class: var(--syntax-class);
         }
 
         .editor-container {

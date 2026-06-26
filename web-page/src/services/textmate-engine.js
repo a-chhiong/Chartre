@@ -83,10 +83,10 @@ export async function ensureTextMateEngine() {
             
             if (plantumlJson) {
                 languagesToRegister.push({
+                    ...plantumlJson,
                     name: 'plantuml',
                     id: 'plantuml',
-                    scopeName: plantumlJson.scopeName || 'source.puml',
-                    ...plantumlJson
+                    scopeName: plantumlJson.scopeName || 'source.puml'
                 });
             }
             
@@ -134,12 +134,14 @@ export function highlightTextMate(code, type) {
             return formattedFallback;
         }
 
-        const lineGrids = shikiHighlighter.codeToTokens(formattedFallback, {
+        const result = shikiHighlighter.codeToTokens(formattedFallback, {
             lang: type,
             theme: 'chartre-theme'
         });
 
         // Guard 3: Mitigate structural object anomalies
+        // codeToTokens returns a TokensResult object with a .tokens property (2D array)
+        const lineGrids = result?.tokens;
         if (!Array.isArray(lineGrids)) {
             return formattedFallback;
         }

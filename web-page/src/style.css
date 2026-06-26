@@ -57,15 +57,17 @@
     --midi-progress-bg: rgba(0, 0, 0, 0.08);
     --bg-splitter-line: rgba(0, 0, 0, 0.15);
 
-    /* Code Editor - Neutral Developer Themes */
-    --code-comment: #6a737d;      /* Neutral gray comment */
-    --code-keyword: #d73a49;      /* Developer coral red/pink */
-    --code-string: #22863a;       /* Standard string green */
-    --code-operator: #005cc5;     /* Distinct blue for operators/arrows */
-    --code-punctuation: #24292e;  /* Dark slate for brackets/colons */
-    --code-variable: #e36209;     /* Warm orange for variables/identifiers */
-    --code-number: #005cc5;       /* Sharp blue for numbers */
-    --code-class: #6f42c1;        /* Royal purple for class names/entities */
+    /* Syntax Highlighting - GitHub-inspired Light Palette
+     * Consumed by editor-component via --code-token-* mappings (Shiki CSS Variables Theme) */
+    --syntax-keyword: #cf222e;
+    --syntax-string: #0a3069;
+    --syntax-comment: #6e7781;
+    --syntax-constant: #0550ae;
+    --syntax-function: #8250df;
+    --syntax-punctuation: #24292f;
+    --syntax-variable: #953800;
+    --syntax-operator: #cf222e;
+    --syntax-class: #8250df;
 }
 
 html[data-theme="dark"] {
@@ -115,15 +117,17 @@ html[data-theme="dark"] {
     --midi-progress-bg: rgba(255, 255, 255, 0.1);
     --bg-splitter-line: rgba(255, 255, 255, 0.16);
 
-    /* Code Editor - Neutral Developer Themes */
-    --code-comment: #8b949e;      /* Neutral gray comment */
-    --code-keyword: #ff7b72;      /* Developer coral red/pink */
-    --code-string: #7ee787;       /* Standard string green */
-    --code-operator: #79c0ff;     /* Distinct blue for operators/arrows */
-    --code-punctuation: #c9d1d9;  /* Light gray for brackets/colons */
-    --code-variable: #ff9b50;     /* Warm orange for variables/identifiers */
-    --code-number: #79c0ff;       /* Sharp blue for numbers */
-    --code-class: #d2a8ff;        /* Royal purple for class names/entities */
+    /* Syntax Highlighting - GitHub Dark Palette
+     * Consumed by editor-component via --code-token-* mappings (Shiki CSS Variables Theme) */
+    --syntax-keyword: #ff7b72;
+    --syntax-string: #a5d6ff;
+    --syntax-comment: #8b949e;
+    --syntax-constant: #79c0ff;
+    --syntax-function: #d2a8ff;
+    --syntax-punctuation: #c9d1d9;
+    --syntax-variable: #ffa657;
+    --syntax-operator: #ff7b72;
+    --syntax-class: #d2a8ff;
 }
 
 /* CSS Reset & Workspace Lock */

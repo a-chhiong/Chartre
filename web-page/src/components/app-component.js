@@ -216,6 +216,7 @@ export class AppComponent extends LitElement {
                 ></header-component>
 
                 <main class="app-main">
+                    ${c.isLoading ? '' : html`
                     <div class="editor-area" style="${c.isDesktop ? `width: calc(${c.splitPercentage}% - 2px); flex: none;` : `height: calc(${c.splitPercentage}% - 2px); flex: none;`}">
                         <editor-component
                             .umlCode="${c.umlCode}"
@@ -234,6 +235,7 @@ export class AppComponent extends LitElement {
                             @status-changed="${this.handleStatusChanged}"
                         ></preview-component>
                     </div>
+                    `}
                 </main>
 
                 <footer class="app-statusbar">
