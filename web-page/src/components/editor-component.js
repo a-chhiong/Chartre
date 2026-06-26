@@ -1,13 +1,16 @@
 import { LitElement, html, css } from 'lit';
-import { detectDiagramType, highlightCode } from '../services/diagram-engine.js';
+import { detectDiagramType } from '../services/diagram-engine.js';
 import { PLANTUML_PRESETS, MERMAID_PRESETS } from '../../public/syntax-template.js';
 
+// Import our custom dedicated component logic controller
+import { EditorController } from '../controllers/editor-controller.js';
+
 export class EditorComponent extends LitElement {
+    // Instantiate and bind the dedicated business controller cleanly
+    editorCtrl = new EditorController(this);
+
     static properties = {
-        umlCode: { type: String },
-        showLineNumbers: { type: Boolean },
-        lineNumbers: { type: Array, state: true },
-        selectedPreset: { type: String, state: true }
+        umlCode: { type: String }
     };
 
     static styles = css`
@@ -20,6 +23,17 @@ export class EditorComponent extends LitElement {
             flex: 1;
             min-height: 0;
             overflow: hidden;
+
+            /* Scoped Shiki Custom Theme Variable Token Definitions */
+            --code-keyword: #ff79c6;
+            --code-string: #f1fa8c;
+            --code-comment: #6272a4;
+            --code-punctuation: #f8f8f2;
+            --code-variable: #bd93f9;
+            --code-operator: #ffb86c;
+            --code-function: #50fa7b;
+            --code-constant: #bd93f9;
+            --code-class: #8be9fd;
         }
 
         .editor-container {
@@ -159,7 +173,7 @@ export class EditorComponent extends LitElement {
             flex: 1;
             min-height: 0;
             position: relative;
-            overflow: hidden; /* Encapsulates the children components */
+            overflow: hidden;
         }
 
         .line-numbers-gutter {
@@ -177,7 +191,7 @@ export class EditorComponent extends LitElement {
             display: flex;
             flex-direction: column;
             flex-shrink: 0;
-            box-sizing: border-box; /* Ensures padding doesn't distort height calculations */
+            box-sizing: border-box;
         }
 
         .line-numbers-gutter div {
@@ -229,12 +243,12 @@ export class EditorComponent extends LitElement {
             color: var(--text-primary);
             z-index: 1;
             pointer-events: none;
-            scrollbar-width: none; /* Firefox */
-            -ms-overflow-style: none; /* IE 10+ */
+            scrollbar-width: none;
+            -ms-overflow-style: none;
         }
 
         .editor-highlight-pre::-webkit-scrollbar {
-            display: none; /* WebKit */
+            display: none;
         }
 
         .editor-highlight-pre code {
@@ -246,6 +260,7 @@ export class EditorComponent extends LitElement {
             background: none;
             border: none;
             display: block;
+            white-space: pre;
         }
 
         .editor-input {
@@ -253,49 +268,6 @@ export class EditorComponent extends LitElement {
             caret-color: var(--accent-violet);
             z-index: 2;
             resize: none;
-        }
-
-        /* Prism Syntax Token Themes */
-        .editor-highlight-pre .token.comment {
-            color: var(--code-comment);
-            font-style: italic;
-        }
-
-        .editor-highlight-pre .token.keyword {
-            color: var(--code-keyword);
-            font-weight: bold;
-        }
-
-        .editor-highlight-pre .token.string {
-            color: var(--code-string);
-        }
-
-        .editor-highlight-pre .token.operator {
-            color: var(--code-operator);
-        }
-
-        .editor-highlight-pre .token.punctuation {
-            color: var(--code-punctuation);
-        }
-
-        .editor-highlight-pre .token.arrow,
-        .editor-highlight-pre .token.operator-arrow {
-            color: var(--code-operator);
-            font-weight: bold;
-        }
-
-        .editor-highlight-pre .token.variable,
-        .editor-highlight-pre .token.entity {
-            color: var(--code-variable);
-        }
-
-        .editor-highlight-pre .token.class-name {
-            color: var(--code-class);
-        }
-
-        .editor-highlight-pre .token.number,
-        .editor-highlight-pre .token.boolean {
-            color: var(--code-number);
         }
 
         @media (max-width: 768px) {
@@ -333,7 +305,6 @@ export class EditorComponent extends LitElement {
             }
         }
 
-        /* Container queries for dynamic splitter resizing sensitivity */
         @container (max-width: 520px) {
             .title-text {
                 display: none !important;
@@ -383,198 +354,15 @@ export class EditorComponent extends LitElement {
     constructor() {
         super();
         this.umlCode = '';
-        this.showLineNumbers = localStorage.getItem('chartreShowLineNumbers') !== 'false';
-        this.lineNumbers = [];
-        this.selectedPreset = '';
-    }
-
-    willUpdate(changedProperties) {
-        if (changedProperties.has('umlCode')) {
-            const lineCount = Math.max(1, (this.umlCode || '').split('\n').length);
-            this.lineNumbers = Array.from({ length: lineCount }, (_, i) => i + 1);
-
-            // Check if current code exactly matches a preset to highlight the active selection
-            let matchedPreset = '';
-            if (this.umlCode) {
-                for (const [key, val] of Object.entries(PLANTUML_PRESETS)) {
-                    if (this.umlCode === val) {
-                        matchedPreset = 'plantuml:' + key;
-                        break;
-                    }
-                }
-                if (!matchedPreset) {
-                    for (const [key, val] of Object.entries(MERMAID_PRESETS)) {
-                        if (this.umlCode === val) {
-                            matchedPreset = 'mermaid:' + key;
-                            break;
-                        }
-                    }
-                }
-            }
-            this.selectedPreset = matchedPreset;
-        }
     }
 
     updated(changedProperties) {
-        // Sync scroll positions after any update to ensure alignment
-        const textarea = this.shadowRoot.querySelector('.editor-input');
-        if (textarea) {
-            const gutter = this.shadowRoot.querySelector('.line-numbers-gutter');
-            if (gutter && this.showLineNumbers) {
-                gutter.scrollTop = textarea.scrollTop;
-            }
-            const backdrop = this.shadowRoot.querySelector('.editor-highlight-pre');
-            if (backdrop) {
-                backdrop.scrollTop = textarea.scrollTop;
-                backdrop.scrollLeft = textarea.scrollLeft;
-            }
-        }
-    }
-
-    toggleLineNumbers() {
-        this.showLineNumbers = !this.showLineNumbers;
-        localStorage.setItem('chartreShowLineNumbers', String(this.showLineNumbers));
-    }
-
-    handleScroll(e) {
-        const textarea = e.target;
-        const gutter = this.shadowRoot.querySelector('.line-numbers-gutter');
-        if (gutter) {
-            gutter.scrollTop = textarea.scrollTop;
-        }
-        const backdrop = this.shadowRoot.querySelector('.editor-highlight-pre');
-        if (backdrop) {
-            backdrop.scrollTop = textarea.scrollTop;
-            backdrop.scrollLeft = textarea.scrollLeft;
-        }
-    }
-
-    getHighlightedCode() {
-        const type = detectDiagramType(this.umlCode);
-        return highlightCode(this.umlCode, type);
-    }
-
-    handleInput(e) {
-        this._dispatchUMLChanged(e.target.value);
-    }
-
-    _dispatchUMLChanged(value) {
-        this.dispatchEvent(new CustomEvent('uml-changed', {
-            detail: value,
-            bubbles: true,
-            composed: true,
-        }));
-    }
-
-    triggerFileInput() {
-        const fileInput = this.shadowRoot.getElementById('uml-file-input');
-        if (fileInput) {
-            fileInput.click();
-        }
-    }
-
-    handleLoadUMLFile(e) {
-        const file = e.target.files[0];
-        if (!file) return;
-
-        const reader = new FileReader();
-        reader.onload = (event) => {
-            const content = event.target.result;
-            this.umlCode = content;
-            this._dispatchUMLChanged(content);
-            e.target.value = '';
-        };
-        reader.readAsText(file);
-    }
-
-    _parseUMLTitle() {
-        if (!this.umlCode) return '';
-        const match = this.umlCode.match(/^\s*title(?:\s+|:\s*)(.*)$/mi);
-        return match ? match[1].trim() : '';
-    }
-
-    handleSaveUMLFile() {
-        if (!this.umlCode || !this.umlCode.trim()) {
-            this.dispatchEvent(new CustomEvent('show-confirm', {
-                detail: {
-                    title: 'Notice',
-                    message: 'Please write some diagram code first!',
-                    isAlert: true
-                },
-                bubbles: true,
-                composed: true
-            }));
-            return;
-        }
-
-        try {
-            const title = this._parseUMLTitle() || 'diagram';
-            const cleanTitle = title.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '') || 'diagram';
-
-            const type = detectDiagramType(this.umlCode);
-            const ext = type === 'mermaid' ? 'mmd' : 'puml';
-
-            const blob = new Blob([this.umlCode], { type: 'text/plain;charset=utf-8' });
-            const url = URL.createObjectURL(blob);
-            const link = document.createElement('a');
-            link.href = url;
-            link.download = `${cleanTitle}.${ext}`;
-
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            URL.revokeObjectURL(url);
-        } catch (error) {
-            this.dispatchEvent(new CustomEvent('show-confirm', {
-                detail: {
-                    title: 'Error Saving File',
-                    message: 'Failed to save file: ' + error.message,
-                    isAlert: true
-                },
-                bubbles: true,
-                composed: true
-            }));
-        }
-    }
-
-    handleClear() {
-        if (!this.umlCode || !this.umlCode.trim()) return;
-
-        this.dispatchEvent(new CustomEvent('show-confirm', {
-            detail: {
-                title: 'Confirm Clear',
-                message: 'This will delete everything in the editor. Are you sure you want to clear all contents? This action cannot be undone.',
-                confirmText: 'Clear Editor',
-                cancelText: 'Cancel',
-                onConfirm: () => {
-                    this.umlCode = '';
-                    this._dispatchUMLChanged('');
-                }
-            },
-            bubbles: true,
-            composed: true
-        }));
-    }
-
-    handlePresetChange(e) {
-        const val = e.target.value;
-        if (!val) return;
-
-        const [type, key] = val.split(':');
-        let code = '';
-        if (type === 'mermaid') {
-            code = MERMAID_PRESETS[key];
-        } else if (type === 'plantuml') {
-            code = PLANTUML_PRESETS[key];
-        }
-
-        if (code) {
-            this.umlCode = code;
-            this._dispatchUMLChanged(code);
-        }
+        // Delegate positioning updates to the controller
+        this.editorCtrl.syncScroll();
     }
 
     render() {
+        const ec = this.editorCtrl;
         const type = detectDiagramType(this.umlCode);
         const saveTitle = type === 'mermaid' ? 'Save current diagram code as a .mmd file' : 'Save current diagram code as a .puml file';
         const loadTitle = 'Load file from device (.puml, .mmd, .txt)';
@@ -589,11 +377,11 @@ export class EditorComponent extends LitElement {
                     <div class="presets-wrapper">
                         <select 
                             class="presets-select" 
-                            .value="${this.selectedPreset || ''}"
-                            @change="${this.handlePresetChange}" 
+                            .value="${ec.selectedPreset || ''}"
+                            @change="${(e) => ec.handlePresetChange(e)}" 
                             title="Load diagram template"
                         >
-                            <option value="" disabled ?selected="${!this.selectedPreset}">Templates</option>
+                            <option value="" disabled ?selected="${!ec.selectedPreset}">Templates</option>
                             <optgroup label="☕ PlantUML">
                                 ${Object.keys(PLANTUML_PRESETS).map(key => html`
                                     <option value="plantuml:${key}">☕ ${key}</option>
@@ -608,23 +396,23 @@ export class EditorComponent extends LitElement {
                     </div>
 
                     <div class="header-controls">
-                        <input type="file" id="uml-file-input" accept=".puml,.uml,.txt,.mmd,.mermaid" style="display: none;" @change="${this.handleLoadUMLFile}">
+                        <input type="file" id="uml-file-input" accept=".puml,.uml,.txt,.mmd,.mermaid" style="display: none;" @change="${(e) => ec.handleLoadUMLFile(e)}">
 
                         <button
-                            class="action-btn toggle-lines-btn ${this.showLineNumbers ? 'active' : ''}"
-                            @click="${this.toggleLineNumbers}"
+                            class="action-btn toggle-lines-btn ${ec.showLineNumbers ? 'active' : ''}"
+                            @click="${() => ec.toggleLineNumbers()}"
                             title="Toggle line numbers"
                         >
                             🔢
                         </button>
 
-                        <button class="action-btn" @click="${this.triggerFileInput}" title="${loadTitle}">
+                        <button class="action-btn" @click="${() => ec.triggerFileInput()}" title="${loadTitle}">
                             📂
                         </button>
-                        <button class="action-btn" @click="${this.handleSaveUMLFile}" title="${saveTitle}">
+                        <button class="action-btn" @click="${() => ec.handleSaveUMLFile()}" title="${saveTitle}">
                             💾
                         </button>
-                        <button class="action-btn danger" @click="${this.handleClear}" title="Clear all text">
+                        <button class="action-btn danger" @click="${() => ec.handleClear()}" title="Clear all text">
                             🗑️
                         </button>
                     </div>
@@ -632,21 +420,21 @@ export class EditorComponent extends LitElement {
 
                 <div class="editor-content">
                     <div class="editor-body">
-                        ${this.showLineNumbers ? html`
+                        ${ec.showLineNumbers ? html`
                             <div class="line-numbers-gutter">
-                                ${this.lineNumbers.map(n => html`<div>${n}</div>`)}
+                                ${ec.lineNumbers.map(n => html`<div>${n}</div>`)}
                             </div>
                         ` : ''}
                         <div class="editor-highlight-container">
-                            <pre class="editor-highlight-pre" aria-hidden="true"><code class="language-${type || 'text'}">${this.getHighlightedCode()}</code></pre>
+                            <pre class="editor-highlight-pre" aria-hidden="true"><code class="language-${type || 'text'}">${ec.getHighlightedCode()}</code></pre>
                             <textarea
                                 class="editor-input"
                                 placeholder="Write your PlantUML or Mermaid code here..."
                                 spellcheck="false"
                                 wrap="off"
-                                .value="${this.umlCode}"
-                                @input="${this.handleInput}"
-                                @scroll="${this.handleScroll}"
+                                .value="${this.umlCode || ''}"
+                                @input="${(e) => ec.handleInput(e)}"
+                                @scroll="${() => ec.syncScroll()}"
                             ></textarea>
                         </div>
                     </div>

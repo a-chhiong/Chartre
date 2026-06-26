@@ -162,6 +162,10 @@ export class LightboxComponent extends LitElement {
             font-size: 0.95rem;
         }
 
+        .zoom-btn.fit {
+            font-size: 1.0rem;
+        }
+
         .zoom-text {
             font-family: var(--font-ui, 'Plus Jakarta Sans', sans-serif);
             font-size: 0.82rem;
@@ -590,11 +594,11 @@ export class LightboxComponent extends LitElement {
                 <div class="hint">Drag to pan • Pinch or Scroll to zoom • Press Esc to close</div>
 
                 <div class="zoom-toolbar">
-                    <button class="zoom-btn" @click="${this.zoomOut}" title="Zoom Out">-</button>
+                    <button class="zoom-btn" @click="${this.zoomOut}" title="Zoom Out">－</button>
                     <span class="zoom-text">${zoomPct}%</span>
-                    <button class="zoom-btn" @click="${this.zoomIn}" title="Zoom In">+</button>
+                    <button class="zoom-btn" @click="${this.zoomIn}" title="Zoom In">＋</button>
                     <button class="zoom-btn reset" @click="${this.resetZoom}" title="Actual Size (1:1)">1:1</button>
-                    <button class="zoom-btn reset" @click="${this.fitToScreen}" title="Fit to Screen" style="display: flex; align-items: center; justify-content: center;">
+                    <button class="zoom-btn fit" @click="${this.fitToScreen}" title="Fit to Screen" style="display: flex; align-items: center; justify-content: center;">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display: block;">
                             <polyline points="15 3 21 3 21 9"></polyline>
                             <polyline points="9 21 3 21 3 15"></polyline>

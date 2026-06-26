@@ -1,5 +1,5 @@
 import { LitElement, html, css } from 'lit';
-import { PreviewController } from './preview-controller.js';
+import { PreviewController } from '../controllers/preview-controller';
 
 export class PreviewComponent extends LitElement {
     static properties = {
@@ -75,11 +75,11 @@ export class PreviewComponent extends LitElement {
             box-sizing: border-box;
         }
 
-        .zoom-btn, .zoom-reset-btn {
+        .zoom-btn {
             background: transparent;
             border: none;
             color: var(--text-secondary);
-            font-size: 1.0rem;
+            font-size: 0.75rem;
             cursor: pointer;
             width: 20px;
             height: 20px;
@@ -90,16 +90,16 @@ export class PreviewComponent extends LitElement {
             transition: all var(--transition-fast);
         }
 
-        .zoom-btn:hover, .zoom-reset-btn:hover {
+        .zoom-btn:hover {
             background: var(--bg-glass-active);
             color: var(--text-primary);
         }
 
-        .zoom-btn:active, .zoom-reset-btn:active {
+        .zoom-btn:active {
             transform: scale(0.9);
         }
 
-        .zoom-btn:disabled, .zoom-reset-btn:disabled {
+        .zoom-btn:disabled {
             opacity: 0.35;
             cursor: not-allowed;
             background: transparent !important;
@@ -306,9 +306,19 @@ export class PreviewComponent extends LitElement {
                 gap: 2px;
             }
 
-            .zoom-btn, .zoom-reset-btn {
+            .zoom-btn {
                 width: 16px;
                 height: 16px;
+                font-size: 0.75rem;
+            }
+
+            .zoom-btn.reset {
+                font-size: 0.75rem;
+            }
+
+            .zoom-btn.fit {
+                width: 24px;
+                height: 24px;
                 font-size: 1.0rem;
             }
 
@@ -354,9 +364,20 @@ export class PreviewComponent extends LitElement {
                 height: 28px;
             }
 
-            .zoom-btn, .zoom-reset-btn {
+            .zoom-btn {
                 width: 20px;
                 height: 20px;
+                font-size: 0.75rem;
+            }
+
+
+            .zoom-btn.reset {
+                font-size: 0.75rem;
+            }
+
+            .zoom-btn.fit {
+                width: 24px;
+                height: 24px;
                 font-size: 1.0rem;
             }
 
@@ -395,9 +416,19 @@ export class PreviewComponent extends LitElement {
                 gap: 2px;
             }
 
-            .zoom-btn, .zoom-reset-btn {
+            .zoom-btn {
                 width: 14px;
                 height: 14px;
+                font-size: 0.75rem;
+            }
+
+            .zoom-btn.reset {
+                font-size: 0.75rem;
+            }
+
+            .zoom-btn.fit {
+                width: 24px;
+                height: 24px;
                 font-size: 1.0rem;
             }
 
@@ -885,11 +916,18 @@ export class PreviewComponent extends LitElement {
                     </div>
                     
                     <div class="zoom-controls">
-                        <button class="zoom-btn" @click="${this.zoomOut}" ?disabled="${!hasCode || !!this.error}" title="Zoom Out">－</button>
+                        <button class="zoom-btn" @click="${this.zoomOut}" title="Zoom Out">－</button>
                         <span class="zoom-value">${zoomPct}%</span>
-                        <button class="zoom-btn" @click="${this.zoomIn}" ?disabled="${!hasCode || !!this.error}" title="Zoom In">＋</button>
-                        <button class="zoom-reset-btn" @click="${this.resetZoom}" ?disabled="${!hasCode || !!this.error}" title="Actual Size (1:1)">%</button>
-                        <button class="zoom-reset-btn" @click="${this.fitToScreen}" ?disabled="${!hasCode || !!this.error}" title="Fit to Screen">↹</button>
+                        <button class="zoom-btn" @click="${this.zoomIn}" title="Zoom In">＋</button>
+                        <button class="zoom-btn reset" @click="${this.resetZoom}" title="Actual Size (1:1)">1:1</button>
+                        <button class="zoom-btn fit" @click="${this.fitToScreen}" title="Fit to Screen" style="display: flex; align-items: center; justify-content: center;">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display: block;">
+                                <polyline points="15 3 21 3 21 9"></polyline>
+                                <polyline points="9 21 3 21 3 15"></polyline>
+                                <line x1="21" y1="3" x2="14" y2="10"></line>
+                                <line x1="3" y1="21" x2="10" y2="14"></line>
+                            </svg>
+                        </button>
                     </div>
 
                     <div class="header-controls">
