@@ -1,13 +1,6 @@
 import { LitElement, html, css } from 'lit';
-import { unsafeHTML } from 'lit/directives/unsafe-html.js';
-import { detectDiagramType } from '../services/diagram-engine.js';
+import { detectDiagramType, highlightCode } from '../services/diagram-engine.js';
 import { PLANTUML_PRESETS, MERMAID_PRESETS } from '../../public/syntax-template.js';
-
-// Import PrismJS core and language definitions
-import Prism from 'prismjs';
-import 'prismjs/components/prism-clike.js';
-import 'prismjs/components/prism-plant-uml.js';
-import 'prismjs/components/prism-mermaid.js';
 
 export class EditorComponent extends LitElement {
     static properties = {
@@ -457,37 +450,9 @@ export class EditorComponent extends LitElement {
     }
 
     getHighlightedCode() {
-        let code = this.umlCode || '';
-
-        // If code ends with a newline, append a trailing space to prevent scroll height mismatch
-        if (code.endsWith('\n')) {
-            code += ' ';
-        }
-
-        const type = detectDiagramType(code);
-
-        if (type === 'plantuml') {
-            try {
-                return unsafeHTML(Prism.highlight(code, Prism.languages.plantuml, 'plantuml'));
-            } catch (err) {
-                console.error("Prism PlantUML highlighting failed:", err);
-            }
-        } else if (type === 'mermaid') {
-            try {
-                return unsafeHTML(Prism.highlight(code, Prism.languages.mermaid, 'mermaid'));
-            } catch (err) {
-                console.error("Prism Mermaid highlighting failed:", err);
-            }
-        }
-
-        const escaped = code
-            .replace(/&/g, '&amp;')
-            .replace(/</g, '&lt;')
-            .replace(/>/g, '&gt;');
-        return unsafeHTML(escaped);
+        const type = detectDiagramType(this.umlCode);
+        return highlightCode(this.umlCode, type);
     }
-
-
 
     handleInput(e) {
         this._dispatchUMLChanged(e.target.value);
@@ -680,7 +645,7 @@ export class EditorComponent extends LitElement {
                                 spellcheck="false"
                                 wrap="off"
                                 .value="${this.umlCode}"
-                                @input="${this.handleInput.bind(this)}"
+                                @input="${this.handleInput}"
                                 @scroll="${this.handleScroll}"
                             ></textarea>
                         </div>
