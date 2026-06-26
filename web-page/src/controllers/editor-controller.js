@@ -71,6 +71,7 @@ export class EditorController {
     getHighlightedCode() {
         const code = this.host.umlCode || '';
         const type = detectDiagramType(code);
+        // Safely processes text through your Shiki TextMate runtime compiler graph
         return highlightTextMate(code, type);
     }
 

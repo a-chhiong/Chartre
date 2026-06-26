@@ -25,15 +25,15 @@ export class EditorComponent extends LitElement {
             overflow: hidden;
 
             /* Scoped Shiki Custom Theme Variable Token Definitions */
-            --code-keyword: #ff79c6;
-            --code-string: #f1fa8c;
-            --code-comment: #6272a4;
-            --code-punctuation: #f8f8f2;
-            --code-variable: #bd93f9;
-            --code-operator: #ffb86c;
-            --code-function: #50fa7b;
-            --code-constant: #bd93f9;
-            --code-class: #8be9fd;
+            --code-token-keyword: #ff79c6;
+            --code-token-string: #f1fa8c;
+            --code-token-comment: #6272a4;
+            --code-token-punctuation: #f8f8f2;
+            --code-token-variable: #bd93f9;
+            --code-token-operator: #ffb86c;
+            --code-token-function: #50fa7b;
+            --code-token-constant: #bd93f9;
+            --code-token-class: #8be9fd;
         }
 
         .editor-container {
@@ -357,7 +357,7 @@ export class EditorComponent extends LitElement {
     }
 
     updated(changedProperties) {
-        // Delegate positioning updates to the controller
+        // Delegate positioning updates to the controller completely
         this.editorCtrl.syncScroll();
     }
 

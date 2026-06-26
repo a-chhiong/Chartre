@@ -148,7 +148,8 @@ export function highlightTextMate(code, type) {
             if (!Array.isArray(lineTokens)) return html`${lineTokens}`;
             
             const spans = lineTokens.map(token => {
-                const cssStyleString = token.htmlStyle || '';
+                // Construct the inline style string explicitly with the token color value
+                const cssStyleString = token.color ? `color: ${token.color};` : '';
                 return html`<span class="token" style="${cssStyleString}">${token.content}</span>`;
             });
 
