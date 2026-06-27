@@ -10,6 +10,26 @@ export class EditorController {
         // Standalone editor configurations and logic streams
         this.showLineNumbers = localStorage.getItem('chartreShowLineNumbers') !== 'false';
         this.lineNumbers = [];
+
+        // Bind theme-change handler for syntax highlight repaint
+        this._onThemeChanged = this._onThemeChanged.bind(this);
+    }
+
+    hostConnected() {
+        window.addEventListener('theme-changed', this._onThemeChanged);
+    }
+
+    hostDisconnected() {
+        window.removeEventListener('theme-changed', this._onThemeChanged);
+    }
+
+    /**
+     * Forces a repaint of syntax-highlighted tokens when the global theme changes.
+     * CSS custom properties (--syntax-*) update on `html[data-theme]`, but browsers
+     * may not recalculate inline styles using var() inside Shadow DOM without a nudge.
+     */
+    _onThemeChanged() {
+        this.host.requestUpdate();
     }
 
     /**

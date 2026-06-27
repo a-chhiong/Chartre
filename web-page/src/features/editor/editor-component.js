@@ -22,26 +22,6 @@ export class EditorComponent extends LitElement {
             flex: 1;
             min-height: 0;
             overflow: hidden;
-
-            /* Shiki CSS Variables Theme Token Definitions
-             * These map to the var(--code-*) tokens emitted by createCssVariablesTheme.
-             * Values reference the global design system in style.css for theme consistency. */
-            --code-foreground: var(--syntax-foreground);
-            --code-token-keyword: var(--syntax-keyword);
-            --code-token-string: var(--syntax-string);
-            --code-token-string-expression: var(--syntax-string-expression);
-            --code-token-comment: var(--syntax-comment);
-            --code-token-constant: var(--syntax-constant);
-            --code-token-function: var(--syntax-function);
-            --code-token-punctuation: var(--syntax-punctuation);
-            --code-token-variable: var(--syntax-variable);
-            --code-token-operator: var(--syntax-operator);
-            --code-token-class: var(--syntax-class);
-            --code-token-entity: var(--syntax-entity);
-            --code-token-storage: var(--syntax-storage);
-            --code-token-support: var(--syntax-support);
-            --code-token-meta: var(--syntax-meta);
-            --code-token-markup: var(--syntax-markup);
         }
 
         .editor-container {
@@ -278,6 +258,10 @@ export class EditorComponent extends LitElement {
             resize: none;
         }
 
+        .editor-input::placeholder {
+            color: var(--text-muted, rgba(255, 255, 255, 0.4));
+        }
+
         @media (max-width: 768px) {
             .editor-header {
                 height: 36px;
@@ -365,7 +349,13 @@ export class EditorComponent extends LitElement {
     }
 
     updated(changedProperties) {
-        // Delegate positioning updates to the controller completely
+        // Inject highlighted HTML directly into the <code> element
+        const codeEl = this.shadowRoot.querySelector('.editor-highlight-code');
+        if (codeEl) {
+            codeEl.innerHTML = this.editorCtrl.getHighlightedCode();
+        }
+
+        // Delegate positioning updates to the controller
         this.editorCtrl.syncScroll();
     }
 
@@ -433,7 +423,7 @@ export class EditorComponent extends LitElement {
                             </div>
                         ` : ''}
                         <div class="editor-highlight-container">
-                            <pre class="editor-highlight-pre" aria-hidden="true"><code class="language-${family || 'text'}">${ec.getHighlightedCode()}</code></pre>
+                            <pre class="editor-highlight-pre" aria-hidden="true"><code class="editor-highlight-code language-${family || 'text'}"></code></pre>
                             <textarea
                                 class="editor-input"
                                 placeholder="Write your PlantUML or Mermaid code here..."

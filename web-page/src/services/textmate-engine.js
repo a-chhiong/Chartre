@@ -1,10 +1,9 @@
-import { html } from 'lit';
 import { createHighlighter, createCssVariablesTheme } from 'shiki';
 import { buildRegistry, detectDiagramType } from './syntax-registry.js';
 
 const chartreTheme = createCssVariablesTheme({
     name: 'chartre-theme',
-    variablePrefix: '--code-',
+    variablePrefix: '--syntax-',
     fontStyle: false
 });
 
@@ -128,9 +127,10 @@ export async function ensureTextMateEngine() {
 /**
  * TextMate auto-gear highlighter.
  * Pass raw code in — detection, grammar selection, and tokenization are all handled internally.
+ * Returns a plain HTML string with inline CSS variable styles (no Lit dependency).
  * 
  * @param {string} code - Raw diagram source code
- * @returns {TemplateResult[]|string} Lit html template array of highlighted spans, or plain text fallback
+ * @returns {string} HTML string of highlighted spans, or escaped plain text fallback
  */
 export function highlightTextMate(code) {
     const workingCode = code || '';
@@ -138,7 +138,7 @@ export function highlightTextMate(code) {
 
     // Guard 1: Return safe plain fallback if Shiki is not initialized yet
     if (!shikiHighlighter) {
-        return formattedFallback;
+        return escapeHtml(formattedFallback);
     }
 
     // Auto-detect the language from the code
@@ -146,7 +146,7 @@ export function highlightTextMate(code) {
     const languageId = detection.languageId;
 
     if (!languageId) {
-        return formattedFallback;
+        return escapeHtml(formattedFallback);
     }
 
     try {
@@ -159,37 +159,31 @@ export function highlightTextMate(code) {
             if (languageId.startsWith('mermaid') && loadedLangs.includes('mermaid')) {
                 effectiveLang = 'mermaid';
             } else {
-                return formattedFallback;
+                return escapeHtml(formattedFallback);
             }
         }
 
-        const result = shikiHighlighter.codeToTokens(formattedFallback, {
+        // codeToHtml returns a full <pre><code>...</code></pre> wrapper.
+        // We only need the inner token spans, so we strip the outer elements.
+        const htmlOutput = shikiHighlighter.codeToHtml(formattedFallback, {
             lang: effectiveLang,
             theme: 'chartre-theme'
         });
 
-        // Guard: Mitigate structural object anomalies
-        const lineGrids = Array.isArray(result) ? result : result?.tokens;
-        if (!Array.isArray(lineGrids)) {
-            return formattedFallback;
-        }
-
-        return lineGrids.map((lineTokens, lineIndex) => {
-            if (!Array.isArray(lineTokens)) return html`${lineTokens}`;
-            
-            const spans = lineTokens.map(token => {
-                // Prevent stringified 'undefined' properties from leaking into the DOM inline style
-                const hasValidColor = token && token.color && token.color !== 'undefined';
-                const cssStyleString = hasValidColor ? `color: ${token.color};` : '';
-                
-                return html`<span class="token" style="${cssStyleString}">${token.content}</span>`;
-            });
-
-            return html`${spans}${lineIndex < lineGrids.length - 1 ? '\n' : ''}`;
-        });
+        // Extract content inside <code>...</code>
+        const codeMatch = htmlOutput.match(/<code[^>]*>([\s\S]*)<\/code>/);
+        return codeMatch ? codeMatch[1] : escapeHtml(formattedFallback);
 
     } catch (err) {
         console.error(`Synchronous tokenization failed for language [${languageId}]:`, err);
-        return formattedFallback;
+        return escapeHtml(formattedFallback);
     }
+}
+
+/** Minimal HTML escaping for plain-text fallback */
+function escapeHtml(text) {
+    return text
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
 }

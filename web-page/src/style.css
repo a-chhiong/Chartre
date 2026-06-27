@@ -58,23 +58,23 @@
     --bg-splitter-line: rgba(0, 0, 0, 0.15);
 
     /* Syntax Highlighting - GitHub Primer Light Palette (complete)
-     * Consumed by editor-component via --code-token-* mappings (Shiki CSS Variables Theme) */
+     * Consumed directly by Shiki CSS Variables Theme (variablePrefix: '--syntax-') */
     --syntax-foreground: #1f2328;
-    --syntax-keyword: #cf222e;
-    --syntax-string: #0a3069;
-    --syntax-string-expression: #0a3069;
-    --syntax-comment: #6e7781;
-    --syntax-constant: #0550ae;
-    --syntax-function: #8250df;
-    --syntax-punctuation: #1f2328;
-    --syntax-variable: #953800;
-    --syntax-operator: #cf222e;
-    --syntax-class: #6639ba;
-    --syntax-entity: #6639ba;
-    --syntax-storage: #cf222e;
-    --syntax-support: #0550ae;
-    --syntax-meta: #1f2328;
-    --syntax-markup: #0550ae;
+    --syntax-token-keyword: #cf222e;
+    --syntax-token-string: #0a3069;
+    --syntax-token-string-expression: #0a3069;
+    --syntax-token-comment: #6e7781;
+    --syntax-token-constant: #0550ae;
+    --syntax-token-function: #8250df;
+    --syntax-token-punctuation: #1f2328;
+    --syntax-token-variable: #953800;
+    --syntax-token-operator: #cf222e;
+    --syntax-token-class: #6639ba;
+    --syntax-token-entity: #6639ba;
+    --syntax-token-storage: #cf222e;
+    --syntax-token-support: #0550ae;
+    --syntax-token-meta: #1f2328;
+    --syntax-token-markup: #0550ae;
 }
 
 html[data-theme="dark"] {
@@ -125,23 +125,23 @@ html[data-theme="dark"] {
     --bg-splitter-line: rgba(255, 255, 255, 0.16);
 
     /* Syntax Highlighting - GitHub Primer Dark Palette (complete)
-     * Consumed by editor-component via --code-token-* mappings (Shiki CSS Variables Theme) */
+     * Consumed directly by Shiki CSS Variables Theme (variablePrefix: '--syntax-') */
     --syntax-foreground: #e6edf3;
-    --syntax-keyword: #ff7b72;
-    --syntax-string: #a5d6ff;
-    --syntax-string-expression: #a5d6ff;
-    --syntax-comment: #8b949e;
-    --syntax-constant: #79c0ff;
-    --syntax-function: #d2a8ff;
-    --syntax-punctuation: #e6edf3;
-    --syntax-variable: #ffa657;
-    --syntax-operator: #ff7b72;
-    --syntax-class: #d2a8ff;
-    --syntax-entity: #7ee787;
-    --syntax-storage: #ff7b72;
-    --syntax-support: #79c0ff;
-    --syntax-meta: #e6edf3;
-    --syntax-markup: #79c0ff;
+    --syntax-token-keyword: #ff7b72;
+    --syntax-token-string: #a5d6ff;
+    --syntax-token-string-expression: #a5d6ff;
+    --syntax-token-comment: #8b949e;
+    --syntax-token-constant: #79c0ff;
+    --syntax-token-function: #d2a8ff;
+    --syntax-token-punctuation: #e6edf3;
+    --syntax-token-variable: #ffa657;
+    --syntax-token-operator: #ff7b72;
+    --syntax-token-class: #d2a8ff;
+    --syntax-token-entity: #7ee787;
+    --syntax-token-storage: #ff7b72;
+    --syntax-token-support: #79c0ff;
+    --syntax-token-meta: #e6edf3;
+    --syntax-token-markup: #79c0ff;
 }
 
 /* CSS Reset & Workspace Lock */
