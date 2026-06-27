@@ -10,7 +10,7 @@ import { LitElement, html, css } from 'lit';
  *
  * The component self-removes from the DOM when closed (Esc, backdrop click, or ✕).
  */
-export class LightboxComponent extends LitElement {
+export class LightboxModal extends LitElement {
     static properties = {
         svgNode: { type: Object },
         _closing: { type: Boolean, state: true },
@@ -611,3 +611,4 @@ export class LightboxComponent extends LitElement {
         `;
     }
 }
+customElements.define('lightbox-modal', LightboxModal);

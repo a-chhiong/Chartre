@@ -1,5 +1,5 @@
 import { LitElement, html, css } from 'lit';
-import { PreviewController } from '../controllers/preview-controller';
+import { PreviewController } from './preview-controller';
 
 export class PreviewComponent extends LitElement {
     static properties = {
@@ -990,3 +990,4 @@ export class PreviewComponent extends LitElement {
         `;
     }
 }
+customElements.define('preview-component', PreviewComponent);

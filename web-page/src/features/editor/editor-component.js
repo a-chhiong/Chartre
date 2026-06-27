@@ -1,9 +1,9 @@
 import { LitElement, html, css } from 'lit';
-import { detectDiagramType } from '../services/diagram-engine.js';
-import { PLANTUML_PRESETS, MERMAID_PRESETS } from '../../public/syntax-template.js';
+import { detectDiagramType } from '../../services/diagram-engine.js';
+import { PLANTUML_PRESETS, MERMAID_PRESETS } from '../../../public/syntax-template.js';
 
 // Import our custom dedicated component logic controller
-import { EditorController } from '../controllers/editor-controller.js';
+import { EditorController } from './editor-controller.js';
 
 export class EditorComponent extends LitElement {
     // Instantiate and bind the dedicated business controller cleanly
@@ -446,3 +446,4 @@ export class EditorComponent extends LitElement {
         `;
     }
 }
+customElements.define('editor-component', EditorComponent);

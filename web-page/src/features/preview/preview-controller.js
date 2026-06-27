@@ -1,4 +1,4 @@
-import { detectDiagramType, loadMermaid, loadPlantUML } from '../services/diagram-engine.js';
+import { detectDiagramType, loadMermaid, loadPlantUML } from '../../services/diagram-engine.js';
 
 export class PreviewController {
     constructor(host) {

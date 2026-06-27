@@ -112,3 +112,4 @@ export class AppLoader extends LitElement {
         `;
     }
 }
+customElements.define('app-loader', AppLoader);

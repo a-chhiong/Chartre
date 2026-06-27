@@ -1,6 +1,6 @@
-import { detectDiagramType } from '../services/diagram-engine.js';
-import { highlightTextMate } from '../services/textmate-engine.js';
-import { PLANTUML_PRESETS, MERMAID_PRESETS } from '../../public/syntax-template.js';
+import { detectDiagramType } from '../../services/diagram-engine.js';
+import { highlightTextMate } from '../../services/textmate-engine.js';
+import { PLANTUML_PRESETS, MERMAID_PRESETS } from '../../../public/syntax-template.js';
 
 export class EditorController {
     constructor(host) {

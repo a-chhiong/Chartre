@@ -1,5 +1,5 @@
 import { LitElement, html, css } from 'lit';
-import { AppController } from '../controllers/app-controller.js';
+import { AppController } from './app-controller.js';
 
 export class AppComponent extends LitElement {
     // Instantiate our business logic controller cleanly
@@ -264,3 +264,4 @@ export class AppComponent extends LitElement {
         `;
     }
 }
+customElements.define('chartre-app', AppComponent);

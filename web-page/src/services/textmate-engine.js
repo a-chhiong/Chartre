@@ -74,10 +74,16 @@ export async function ensureTextMateEngine() {
                 MERMAID_DIAGRAM_FILES.map(file => fetchGrammarAsset(file))
             );
 
-            const validSubGrammars = fetchedSubGrammars.filter(g => g !== null).map(g => {
-                if (g && !g.id && g.name) g.id = g.name;
-                return g;
-            });
+            const validSubGrammars = fetchedSubGrammars.map((g, idx) => {
+                if (!g) return null;
+                const fallbackName = MERMAID_DIAGRAM_FILES[idx].replace('.tmLanguage.json', '').replace('.json', '');
+                return {
+                    ...g,
+                    name: g.name || g.id || fallbackName,
+                    id: g.id || g.name || fallbackName,
+                    scopeName: g.scopeName || `source.${fallbackName}`
+                };
+            }).filter(g => g !== null);
 
             const languagesToRegister = [];
             
@@ -140,8 +146,7 @@ export function highlightTextMate(code, type) {
         });
 
         // Guard 3: Mitigate structural object anomalies
-        // codeToTokens returns a TokensResult object with a .tokens property (2D array)
-        const lineGrids = result?.tokens;
+        const lineGrids = Array.isArray(result) ? result : result?.tokens;
         if (!Array.isArray(lineGrids)) {
             return formattedFallback;
         }
@@ -150,8 +155,10 @@ export function highlightTextMate(code, type) {
             if (!Array.isArray(lineTokens)) return html`${lineTokens}`;
             
             const spans = lineTokens.map(token => {
-                // Construct the inline style string explicitly with the token color value
-                const cssStyleString = token.color ? `color: ${token.color};` : '';
+                // EXPLICIT GUARD: Prevent stringified 'undefined' properties from leaking into the DOM inline style
+                const hasValidColor = token && token.color && token.color !== 'undefined';
+                const cssStyleString = hasValidColor ? `color: ${token.color};` : '';
+                
                 return html`<span class="token" style="${cssStyleString}">${token.content}</span>`;
             });
 
