@@ -1,5 +1,6 @@
 import { html } from 'lit';
 import { createHighlighter, createCssVariablesTheme } from 'shiki';
+import { buildRegistry, detectDiagramType } from './syntax-registry.js';
 
 const chartreTheme = createCssVariablesTheme({
     name: 'chartre-theme',
@@ -79,11 +80,15 @@ export async function ensureTextMateEngine() {
                 const fallbackName = MERMAID_DIAGRAM_FILES[idx].replace('.tmLanguage.json', '').replace('.json', '');
                 return {
                     ...g,
-                    name: g.name || g.id || fallbackName,
-                    id: g.id || g.name || fallbackName,
-                    scopeName: g.scopeName || `source.${fallbackName}`
+                    name: fallbackName,
+                    id: fallbackName,
+                    scopeName: g.scopeName || `source.mermaid.${fallbackName.replace('mermaid-', '')}`
+                    // No injectTo — each sub-grammar is registered as a standalone language
                 };
             }).filter(g => g !== null);
+
+            // Build the syntax registry from grammar-declared typeKeywords
+            buildRegistry(validSubGrammars);
 
             const languagesToRegister = [];
             
@@ -121,31 +126,49 @@ export async function ensureTextMateEngine() {
 }
 
 /**
- * TextMate Synchronous Highlights Parser
- * Maps tokens safely to granular elements once initialization promises resolve.
+ * TextMate auto-gear highlighter.
+ * Pass raw code in — detection, grammar selection, and tokenization are all handled internally.
+ * 
+ * @param {string} code - Raw diagram source code
+ * @returns {TemplateResult[]|string} Lit html template array of highlighted spans, or plain text fallback
  */
-export function highlightTextMate(code, type) {
+export function highlightTextMate(code) {
     const workingCode = code || '';
     const formattedFallback = workingCode.endsWith('\n') ? workingCode + ' ' : workingCode;
 
-    // Guard 1: Return safe plain fallback text layout if Shiki is not initialized yet
-    if (!shikiHighlighter || !type) {
+    // Guard 1: Return safe plain fallback if Shiki is not initialized yet
+    if (!shikiHighlighter) {
+        return formattedFallback;
+    }
+
+    // Auto-detect the language from the code
+    const detection = detectDiagramType(workingCode);
+    const languageId = detection.languageId;
+
+    if (!languageId) {
         return formattedFallback;
     }
 
     try {
-        // Guard 2: Confirm the grammar registration is active in the engine's current list
+        // Resolve effective language with fallback chain
         const loadedLangs = shikiHighlighter.getLoadedLanguages();
-        if (!loadedLangs.includes(type)) {
-            return formattedFallback;
+        let effectiveLang = languageId;
+
+        if (!loadedLangs.includes(languageId)) {
+            // Fallback: if the specific mermaid sub-grammar isn't loaded, try master
+            if (languageId.startsWith('mermaid') && loadedLangs.includes('mermaid')) {
+                effectiveLang = 'mermaid';
+            } else {
+                return formattedFallback;
+            }
         }
 
         const result = shikiHighlighter.codeToTokens(formattedFallback, {
-            lang: type,
+            lang: effectiveLang,
             theme: 'chartre-theme'
         });
 
-        // Guard 3: Mitigate structural object anomalies
+        // Guard: Mitigate structural object anomalies
         const lineGrids = Array.isArray(result) ? result : result?.tokens;
         if (!Array.isArray(lineGrids)) {
             return formattedFallback;
@@ -155,7 +178,7 @@ export function highlightTextMate(code, type) {
             if (!Array.isArray(lineTokens)) return html`${lineTokens}`;
             
             const spans = lineTokens.map(token => {
-                // EXPLICIT GUARD: Prevent stringified 'undefined' properties from leaking into the DOM inline style
+                // Prevent stringified 'undefined' properties from leaking into the DOM inline style
                 const hasValidColor = token && token.color && token.color !== 'undefined';
                 const cssStyleString = hasValidColor ? `color: ${token.color};` : '';
                 
@@ -166,7 +189,7 @@ export function highlightTextMate(code, type) {
         });
 
     } catch (err) {
-        console.error(`Synchronous tokenization failed for language format [${type}]:`, err);
+        console.error(`Synchronous tokenization failed for language [${languageId}]:`, err);
         return formattedFallback;
     }
 }

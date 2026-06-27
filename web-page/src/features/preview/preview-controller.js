@@ -1,4 +1,4 @@
-import { detectDiagramType, loadMermaid, loadPlantUML } from '../../services/diagram-engine.js';
+import { renderDiagram } from '../../services/diagram-engine.js';
 
 export class PreviewController {
     constructor(host) {
@@ -71,7 +71,7 @@ export class PreviewController {
         }
     }
 
-    async _onThemeChanged(e) {
+    async _onThemeChanged() {
         //TODO: If the theme changes while compiling, we might want to recompile the diagram with the new theme.
     }
 
@@ -92,15 +92,12 @@ export class PreviewController {
             return;
         }
 
-        const type = detectDiagramType(trimmedCode);
-        this.diagramType = type;
         this.compiling = true;
         this.error = null;
         this.host.requestUpdate();
-
         this._dispatchStatus('Compiling...', false);
 
-        // Start safety timeout to prevent infinite loader (e.g. if engine blocks or hangs)
+        // Safety timeout to prevent infinite loader
         if (this._compileTimeout) {
             clearTimeout(this._compileTimeout);
         }
@@ -108,114 +105,31 @@ export class PreviewController {
             if (this.compiling) {
                 this._handleCompilationFailure("Compilation Timeout: Diagram engine did not respond in time.");
             }
-        }, 8000); // 8 seconds safety timeout
+        }, 8000);
 
-        if (type === 'plantuml') {
-            try {
-                const render = await loadPlantUML();
-                const lines = trimmedCode.split(/\r\n|\r|\n/);
-                const dark = document.documentElement.getAttribute('data-theme') === 'dark';
-
-                render(
-                    lines,
-                    (svgOutput) => {
-                        if (this._compileTimeout) {
-                            clearTimeout(this._compileTimeout);
-                            this._compileTimeout = null;
-                        }
-                        this.svgString = svgOutput;
-                        this.error = null;
-                        this.compiling = false;
-                        this.host.requestUpdate();
-                        this._dispatchStatus('✓ Diagram Ready', false);
-                    },
-                    (err) => {
-                        if (this._compileTimeout) {
-                            clearTimeout(this._compileTimeout);
-                            this._compileTimeout = null;
-                        }
-                        console.error("PlantUML compile error:", err);
-                        this.error = err.message || String(err);
-                        this.svgString = null;
-                        this.compiling = false;
-                        this.host.requestUpdate();
-                        this._dispatchStatus('✗ Compilation Error', true);
-                    },
-                    { dark: dark }
-                );
-            } catch (err) {
-                if (this._compileTimeout) {
-                    clearTimeout(this._compileTimeout);
-                    this._compileTimeout = null;
-                }
-                console.error("Failed to load/run PlantUML compiler:", err);
-                this.error = err.message || String(err);
-                this.svgString = null;
-                this.compiling = false;
-                this.host.requestUpdate();
-                this._dispatchStatus('✗ Engine Error', true);
-            }
-        } else if (type === 'mermaid') {
-            try {
-                const id = 'mermaid-svg-' + Math.floor(Math.random() * 1000000);
-                
-                // Clear any leftover mermaid error elements in body
-                const badge = document.getElementById('dmermaid-svg');
-                if (badge) badge.remove();
-
-                const m = await loadMermaid();
-                const { svg } = await m.render(id, trimmedCode);
-                if (this._compileTimeout) {
-                    clearTimeout(this._compileTimeout);
-                    this._compileTimeout = null;
-                }
-                this.svgString = svg;
-                this.error = null;
-                this.compiling = false;
-                this.host.requestUpdate();
-                this._dispatchStatus('✓ Diagram Ready', false);
-            } catch (err) {
-                if (this._compileTimeout) {
-                    clearTimeout(this._compileTimeout);
-                    this._compileTimeout = null;
-                }
-                console.error("Mermaid compile error:", err);
-                
-                // Extract error message
-                let msg = err.message || String(err);
-                
-                // Mermaid sometimes puts error message on element or throws an object
-                if (err.str) {
-                    msg = err.str;
-                }
-                
-                // Remove the temp div created by mermaid if any
-                const tempDiv = document.getElementById('d' + id);
-                if (tempDiv) tempDiv.remove();
-
-                this.error = msg;
-                this.svgString = null;
-                this.compiling = false;
-                this.host.requestUpdate();
-                this._dispatchStatus('✗ Compilation Error', true);
-            }
-        } else {
+        try {
+            const result = await renderDiagram(trimmedCode);
             if (this._compileTimeout) {
                 clearTimeout(this._compileTimeout);
                 this._compileTimeout = null;
             }
-            // Neither detected
+            this.svgString = result.svg;
+            this.diagramType = result.family;
+            this.error = null;
+            this.compiling = false;
+            this.host.requestUpdate();
+            this._dispatchStatus('✓ Diagram Ready', false);
+        } catch (err) {
+            if (this._compileTimeout) {
+                clearTimeout(this._compileTimeout);
+                this._compileTimeout = null;
+            }
+            console.error("Diagram compile error:", err);
+            this.error = err.message || String(err);
             this.svgString = null;
             this.compiling = false;
-            
-            // Build a helpful syntax guidance message
-            this.error = `Unrecognized syntax format.
-Please check your syntax:
-• PlantUML: Start your diagram with '@startuml' and end with '@enduml'.
-• Mermaid: Start with a supported diagram keyword (e.g., 'flowchart TD', 'sequenceDiagram', 'classDiagram', 'stateDiagram-v2').`;
-            
             this.host.requestUpdate();
-            this._dispatchStatus('✗ Unrecognized Syntax', true);
+            this._dispatchStatus('✗ Compilation Error', true);
         }
     }
 

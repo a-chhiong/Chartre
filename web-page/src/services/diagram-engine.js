@@ -1,7 +1,42 @@
+/**
+ * Diagram Engine — unified auto-gear rendering interface.
+ * 
+ * Callers pass raw code in, the engine detects the family and renders.
+ * No manual gear selection needed — detection is internal.
+ * 
+ * Public API:
+ *   renderDiagram(code, options?) → Promise<string>  (SVG)
+ *   detectFamily(code)            → 'plantuml'|'mermaid'|null
+ *   initializeEngines()           → Promise<void>    (pre-warm)
+ */
+
+import { detectDiagramType } from './syntax-registry.js';
+
+// ─── Lightweight Queries (synchronous) ──────────────────────────────────────
+
+/**
+ * Returns the diagram family for the given code.
+ * Useful for UI decisions (file extensions, tooltips, icons) without
+ * exposing the full detection object or the registry itself.
+ * 
+ * @param {string} code - Raw diagram source code
+ * @returns {'plantuml'|'mermaid'|null}
+ */
+export function detectFamily(code) {
+    return detectDiagramType(code).family;
+}
+
+// ─── Engine Singletons ──────────────────────────────────────────────────────
+
 let plantumlLoadingPromise = null;
 let plantumlInstance = null;
 
-export function loadPlantUML() {
+let mermaidLoadingPromise = null;
+let mermaidInstance = null;
+
+// ─── Lazy Loaders (internal) ────────────────────────────────────────────────
+
+function loadPlantUML() {
     if (plantumlInstance) return Promise.resolve(plantumlInstance);
     if (!plantumlLoadingPromise) {
         plantumlLoadingPromise = (async () => {
@@ -19,17 +54,13 @@ export function loadPlantUML() {
     return plantumlLoadingPromise;
 }
 
-let mermaidLoadingPromise = null;
-let mermaidInstance = null;
-
-export function loadMermaid() {
+function loadMermaid() {
     if (mermaidInstance) return Promise.resolve(mermaidInstance);
     if (!mermaidLoadingPromise) {
         mermaidLoadingPromise = (async () => {
             const module = await import('mermaid');
             mermaidInstance = module.default || module;
             
-            // Initialize mermaid with basic options
             mermaidInstance.initialize({
                 startOnLoad: false,
                 securityLevel: 'loose',
@@ -48,6 +79,103 @@ export function loadMermaid() {
     return mermaidLoadingPromise;
 }
 
+// ─── Renderers (internal) ───────────────────────────────────────────────────
+
+/**
+ * Renders PlantUML code to SVG.
+ * Wraps the callback-based @plantuml/core API into a Promise.
+ */
+async function renderPlantUML(code, options = {}) {
+    const render = await loadPlantUML();
+    const lines = code.split(/\r\n|\r|\n/);
+    const dark = options.dark ?? (document.documentElement.getAttribute('data-theme') === 'dark');
+
+    return new Promise((resolve, reject) => {
+        render(
+            lines,
+            (svgOutput) => resolve(svgOutput),
+            (err) => reject(err instanceof Error ? err : new Error(err?.message || String(err))),
+            { dark }
+        );
+    });
+}
+
+/**
+ * Renders Mermaid code to SVG.
+ * Handles DOM cleanup for leftover error elements.
+ */
+async function renderMermaid(code) {
+    const id = 'mermaid-svg-' + Math.floor(Math.random() * 1000000);
+
+    // Clear any leftover mermaid error elements in body
+    const badge = document.getElementById('dmermaid-svg');
+    if (badge) badge.remove();
+
+    try {
+        const m = await loadMermaid();
+        const { svg } = await m.render(id, code);
+        return svg;
+    } catch (err) {
+        // Remove the temp div created by mermaid on failure
+        const tempDiv = document.getElementById('d' + id);
+        if (tempDiv) tempDiv.remove();
+
+        // Normalize mermaid's varied error shapes
+        const message = err?.str || err?.message || String(err);
+        throw new Error(message);
+    }
+}
+
+// ─── Public API ─────────────────────────────────────────────────────────────
+
+/**
+ * @typedef {object} RenderResult
+ * @property {string} svg - The rendered SVG string
+ * @property {'plantuml'|'mermaid'} family - The detected diagram family
+ * @property {string|null} languageId - The resolved syntax language ID
+ */
+
+/**
+ * Universal auto-gear diagram renderer.
+ * Detects the diagram type from the code, loads the appropriate engine, and renders.
+ * 
+ * @param {string} code - Raw diagram source code
+ * @param {object} [options] - Render options
+ * @param {boolean} [options.dark] - Force dark mode (PlantUML). Auto-detected if omitted.
+ * @returns {Promise<RenderResult>} Rendered SVG with detection metadata
+ * @throws {Error} On compilation failure or unrecognized syntax
+ */
+export async function renderDiagram(code, options = {}) {
+    const trimmed = code?.trim();
+    if (!trimmed) {
+        throw new Error('No diagram code provided.');
+    }
+
+    const detection = detectDiagramType(trimmed);
+
+    switch (detection.family) {
+        case 'plantuml': {
+            const svg = await renderPlantUML(trimmed, options);
+            return { svg, family: 'plantuml', languageId: detection.languageId };
+        }
+        case 'mermaid': {
+            const svg = await renderMermaid(trimmed, options);
+            return { svg, family: 'mermaid', languageId: detection.languageId };
+        }
+        default:
+            throw new Error(
+                `Unrecognized syntax format.\n` +
+                `Please check your syntax:\n` +
+                `• PlantUML: Start your diagram with '@startuml' and end with '@enduml'.\n` +
+                `• Mermaid: Start with a supported diagram keyword (e.g., 'flowchart TD', 'sequenceDiagram', 'classDiagram', 'stateDiagram-v2').`
+            );
+    }
+}
+
+/**
+ * Pre-initializes both engines in parallel.
+ * Called at app startup to warm up the WASM/JS runtimes before the user types.
+ */
 export async function initializeEngines() {
     try {
         await Promise.all([
@@ -58,46 +186,4 @@ export async function initializeEngines() {
     } catch (err) {
         console.error("Failed to pre-initialize diagram engines:", err);
     }
-}
-
-export function detectDiagramType(code) {
-    if (!code || !code.trim()) return null;
-
-    // Fast lookups using Set for O(1) matching speed
-    const mermaidKeywords = new Set([
-        'graph', 'flowchart', 'sequenceDiagram', 'classDiagram', 
-        'stateDiagram', 'stateDiagram-v2', 'erDiagram', 'gantt', 
-        'pie', 'gitGraph', 'journey', 'info', 'mindmap', 'timeline', 
-        'quadrantChart', 'xychart-beta', 'architecture', 'sankey-beta', 
-        'c4Context', 'requirementDiagram', 'packet-beta', 'kanban', 'block'
-    ]);
-
-    // 1. Clean out frontmatter or leading comments/whitespace sequentially at the start
-    // This regex looks ONLY at the head of the file. It skips:
-    //   - Any leading whitespace/newlines
-    //   - YAML frontmatter blocks: --- \n ... \n ---
-    //   - Multiple Mermaid comment lines: %% ...
-    //   - Multiple PlantUML comment lines: ' ...
-    const headCleanerRegex = /^\s*(?:---[\s\S]*?---\s*|%%.*(?:\r?\n\s*)*|'.*(?:\r?\n\s*)*)*/;
-    
-    const headMatch = code.match(headCleanerRegex);
-    const startIndex = headMatch ? headMatch[0].length : 0;
-    
-    // Slice only a safe subset of the head to inspect, avoiding scanning megabytes of text
-    const sampleHead = code.substring(startIndex, startIndex + 200).trim();
-    if (!sampleHead) return null;
-
-    // 2. High-accuracy PlantUML Check
-    if (sampleHead.startsWith('@start')) {
-        return 'plantuml';
-    }
-
-    // 3. High-accuracy Mermaid Check
-    // Extracts the very first coherent word token from our sample head
-    const firstWordMatch = sampleHead.match(/^[a-zA-Z0-9_-]+/);
-    if (firstWordMatch && mermaidKeywords.has(firstWordMatch[0])) {
-        return 'mermaid';
-    }
-
-    return null;
 }

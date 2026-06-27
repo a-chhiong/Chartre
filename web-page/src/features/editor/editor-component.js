@@ -1,5 +1,4 @@
 import { LitElement, html, css } from 'lit';
-import { detectDiagramType } from '../../services/diagram-engine.js';
 import { PLANTUML_PRESETS, MERMAID_PRESETS } from '../../../public/syntax-template.js';
 
 // Import our custom dedicated component logic controller
@@ -27,10 +26,10 @@ export class EditorComponent extends LitElement {
             /* Shiki CSS Variables Theme Token Definitions
              * These map to the var(--code-*) tokens emitted by createCssVariablesTheme.
              * Values reference the global design system in style.css for theme consistency. */
-            --code-foreground: var(--text-primary);
+            --code-foreground: var(--syntax-foreground);
             --code-token-keyword: var(--syntax-keyword);
             --code-token-string: var(--syntax-string);
-            --code-token-string-expression: var(--syntax-string);
+            --code-token-string-expression: var(--syntax-string-expression);
             --code-token-comment: var(--syntax-comment);
             --code-token-constant: var(--syntax-constant);
             --code-token-function: var(--syntax-function);
@@ -38,6 +37,11 @@ export class EditorComponent extends LitElement {
             --code-token-variable: var(--syntax-variable);
             --code-token-operator: var(--syntax-operator);
             --code-token-class: var(--syntax-class);
+            --code-token-entity: var(--syntax-entity);
+            --code-token-storage: var(--syntax-storage);
+            --code-token-support: var(--syntax-support);
+            --code-token-meta: var(--syntax-meta);
+            --code-token-markup: var(--syntax-markup);
         }
 
         .editor-container {
@@ -367,8 +371,8 @@ export class EditorComponent extends LitElement {
 
     render() {
         const ec = this.editorCtrl;
-        const type = detectDiagramType(this.umlCode);
-        const saveTitle = type === 'mermaid' ? 'Save current diagram code as a .mmd file' : 'Save current diagram code as a .puml file';
+        const family = ec.getFamily();
+        const saveTitle = family === 'mermaid' ? 'Save current diagram code as a .mmd file' : 'Save current diagram code as a .puml file';
         const loadTitle = 'Load file from device (.puml, .mmd, .txt)';
 
         return html`
@@ -429,7 +433,7 @@ export class EditorComponent extends LitElement {
                             </div>
                         ` : ''}
                         <div class="editor-highlight-container">
-                            <pre class="editor-highlight-pre" aria-hidden="true"><code class="language-${type || 'text'}">${ec.getHighlightedCode()}</code></pre>
+                            <pre class="editor-highlight-pre" aria-hidden="true"><code class="language-${family || 'text'}">${ec.getHighlightedCode()}</code></pre>
                             <textarea
                                 class="editor-input"
                                 placeholder="Write your PlantUML or Mermaid code here..."

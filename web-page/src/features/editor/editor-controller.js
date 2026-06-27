@@ -1,4 +1,4 @@
-import { detectDiagramType } from '../../services/diagram-engine.js';
+import { detectFamily } from '../../services/diagram-engine.js';
 import { highlightTextMate } from '../../services/textmate-engine.js';
 import { PLANTUML_PRESETS, MERMAID_PRESETS } from '../../../public/syntax-template.js';
 
@@ -10,6 +10,15 @@ export class EditorController {
         // Standalone editor configurations and logic streams
         this.showLineNumbers = localStorage.getItem('chartreShowLineNumbers') !== 'false';
         this.lineNumbers = [];
+    }
+
+    /**
+     * Returns the detected diagram family for the editor's code.
+     * Used by the component for UI presentation (tooltips, file extension, CSS classes).
+     */
+    getFamily() {
+        const code = this.host.umlCode || '';
+        return detectFamily(code);
     }
 
     // Lit lifecycle hook that automatically runs before the host's render phase
@@ -49,9 +58,7 @@ export class EditorController {
 
     getHighlightedCode() {
         const code = this.host.umlCode || '';
-        const type = detectDiagramType(code);
-        // Safely processes text through your Shiki TextMate runtime compiler graph
-        return highlightTextMate(code, type);
+        return highlightTextMate(code);
     }
 
     handleInput(e) {
@@ -111,8 +118,8 @@ export class EditorController {
             const title = this._parseUMLTitle() || 'diagram';
             const cleanTitle = title.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '') || 'diagram';
 
-            const type = detectDiagramType(code);
-            const ext = type === 'mermaid' ? 'mmd' : 'puml';
+            const family = this.getFamily();
+            const ext = family === 'mermaid' ? 'mmd' : 'puml';
 
             const blob = new Blob([code], { type: 'text/plain;charset=utf-8' });
             const url = URL.createObjectURL(blob);
