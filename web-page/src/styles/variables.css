@@ -3,6 +3,8 @@
  * Light and dark theme CSS custom properties.
  */
 
+@import './syntax-tokens.css';
+
 :root {
     /* Color Palette - Default Light Theme */
     --bg-primary: #f8fafc;       /* Slate-50 light background */
@@ -56,25 +58,6 @@
     --midi-btn-bg: rgba(0, 0, 0, 0.04);
     --midi-progress-bg: rgba(0, 0, 0, 0.08);
     --bg-splitter-line: rgba(0, 0, 0, 0.15);
-
-    /* Syntax Highlighting - GitHub Primer Light Palette (complete)
-     * Consumed directly by Shiki CSS Variables Theme (variablePrefix: '--syntax-') */
-    --syntax-foreground: #1f2328;
-    --syntax-token-keyword: #cf222e;
-    --syntax-token-string: #0a3069;
-    --syntax-token-string-expression: #0a3069;
-    --syntax-token-comment: #6e7781;
-    --syntax-token-constant: #0550ae;
-    --syntax-token-function: #8250df;
-    --syntax-token-punctuation: #1f2328;
-    --syntax-token-variable: #953800;
-    --syntax-token-operator: #cf222e;
-    --syntax-token-class: #6639ba;
-    --syntax-token-entity: #6639ba;
-    --syntax-token-storage: #cf222e;
-    --syntax-token-support: #0550ae;
-    --syntax-token-meta: #1f2328;
-    --syntax-token-markup: #0550ae;
 }
 
 html[data-theme="dark"] {
@@ -83,7 +66,7 @@ html[data-theme="dark"] {
     --bg-secondary: #131a2c;     /* Dark panel base */
     --bg-glass: rgba(19, 26, 44, 0.65); /* Translucent glass panel */
     --bg-glass-active: rgba(30, 41, 69, 0.8);
-    --bg-paper: #fcfbfa;         /* Elegant warm sheet music paper */
+    --bg-paper: #1e2433;         /* Dark slate paper for dark-themed diagrams */
     --bg-app-gradient: radial-gradient(circle at 10% 20%, #1e1b4b 0%, #0f172a 90%);
     --bg-panel-header: rgba(22, 30, 49, 0.7);
     --bg-zoom-controls: rgba(0, 0, 0, 0.2);
@@ -123,23 +106,4 @@ html[data-theme="dark"] {
     --midi-btn-bg: rgba(255, 255, 255, 0.05);
     --midi-progress-bg: rgba(255, 255, 255, 0.1);
     --bg-splitter-line: rgba(255, 255, 255, 0.16);
-
-    /* Syntax Highlighting - GitHub Primer Dark Palette (complete)
-     * Consumed directly by Shiki CSS Variables Theme (variablePrefix: '--syntax-') */
-    --syntax-foreground: #e6edf3;
-    --syntax-token-keyword: #ff7b72;
-    --syntax-token-string: #a5d6ff;
-    --syntax-token-string-expression: #a5d6ff;
-    --syntax-token-comment: #8b949e;
-    --syntax-token-constant: #79c0ff;
-    --syntax-token-function: #d2a8ff;
-    --syntax-token-punctuation: #e6edf3;
-    --syntax-token-variable: #ffa657;
-    --syntax-token-operator: #ff7b72;
-    --syntax-token-class: #d2a8ff;
-    --syntax-token-entity: #7ee787;
-    --syntax-token-storage: #ff7b72;
-    --syntax-token-support: #79c0ff;
-    --syntax-token-meta: #e6edf3;
-    --syntax-token-markup: #79c0ff;
 }

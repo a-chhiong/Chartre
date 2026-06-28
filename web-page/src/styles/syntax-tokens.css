@@ -1,0 +1,102 @@
+/*
+ * Unified Syntax Highlighting Tokens
+ * Shared color palette for code editor syntax coloring.
+ * Source of truth: GitHub Primer palette — consumed by Shiki (CSS Variables Theme)
+ * and provides aliases for CodeMirror HighlightStyle compatibility.
+ *
+ * Shiki convention:   --syntax-token-<role>   (variablePrefix: '--syntax-')
+ * CodeMirror convention: --syntax-<role>       (used in HighlightStyle.define)
+ *
+ * Both naming conventions resolve to the same underlying colors so that
+ * Chartre (Shiki) and Spectre (CodeMirror) render identical syntax coloring.
+ */
+
+:root {
+    /* ─────────────────────────────────────────────────────────
+       LIGHT MODE — GitHub Primer Light
+    ───────────────────────────────────────────────────────── */
+
+    /* Shiki tokens (consumed via variablePrefix: '--syntax-') */
+    --syntax-foreground: #1f2328;
+    --syntax-token-keyword: #cf222e;
+    --syntax-token-string: #0a3069;
+    --syntax-token-string-expression: #0a3069;
+    --syntax-token-comment: #6e7781;
+    --syntax-token-constant: #0550ae;
+    --syntax-token-function: #8250df;
+    --syntax-token-punctuation: #1f2328;
+    --syntax-token-variable: #953800;
+    --syntax-token-operator: #cf222e;
+    --syntax-token-class: #6639ba;
+    --syntax-token-entity: #6639ba;
+    --syntax-token-storage: #cf222e;
+    --syntax-token-support: #0550ae;
+    --syntax-token-meta: #1f2328;
+    --syntax-token-markup: #0550ae;
+
+    /* CodeMirror aliases (consumed via HighlightStyle var() references) */
+    --syntax-keyword: #cf222e;
+    --syntax-operator: #cf222e;
+    --syntax-meta: #1f2328;
+    --syntax-string: #0a3069;
+    --syntax-number: #0550ae;
+    --syntax-bool: #0550ae;
+    --syntax-null: #0550ae;
+    --syntax-comment: #6e7781;
+    --syntax-variable: #953800;
+    --syntax-type: #6639ba;
+    --syntax-function: #8250df;
+    --syntax-tag: #cf222e;
+    --syntax-heading: #0550ae;
+    --syntax-list: #1f2328;
+    --syntax-url: #0550ae;
+    --syntax-link: #0550ae;
+    --syntax-property: #0550ae;
+    --syntax-atom: #0550ae;
+    --syntax-attribute: #6639ba;
+}
+
+html[data-theme="dark"] {
+    /* ─────────────────────────────────────────────────────────
+       DARK MODE — GitHub Primer Dark
+    ───────────────────────────────────────────────────────── */
+
+    /* Shiki tokens */
+    --syntax-foreground: #e6edf3;
+    --syntax-token-keyword: #ff7b72;
+    --syntax-token-string: #a5d6ff;
+    --syntax-token-string-expression: #a5d6ff;
+    --syntax-token-comment: #8b949e;
+    --syntax-token-constant: #79c0ff;
+    --syntax-token-function: #d2a8ff;
+    --syntax-token-punctuation: #e6edf3;
+    --syntax-token-variable: #ffa657;
+    --syntax-token-operator: #ff7b72;
+    --syntax-token-class: #d2a8ff;
+    --syntax-token-entity: #7ee787;
+    --syntax-token-storage: #ff7b72;
+    --syntax-token-support: #79c0ff;
+    --syntax-token-meta: #e6edf3;
+    --syntax-token-markup: #79c0ff;
+
+    /* CodeMirror aliases */
+    --syntax-keyword: #ff7b72;
+    --syntax-operator: #ff7b72;
+    --syntax-meta: #e6edf3;
+    --syntax-string: #a5d6ff;
+    --syntax-number: #79c0ff;
+    --syntax-bool: #79c0ff;
+    --syntax-null: #79c0ff;
+    --syntax-comment: #8b949e;
+    --syntax-variable: #ffa657;
+    --syntax-type: #d2a8ff;
+    --syntax-function: #d2a8ff;
+    --syntax-tag: #ff7b72;
+    --syntax-heading: #79c0ff;
+    --syntax-list: #e6edf3;
+    --syntax-url: #79c0ff;
+    --syntax-link: #79c0ff;
+    --syntax-property: #79c0ff;
+    --syntax-atom: #79c0ff;
+    --syntax-attribute: #d2a8ff;
+}

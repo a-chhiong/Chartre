@@ -1,6 +1,6 @@
 import { renderDiagram } from '../../services/diagram-engine.js';
 
-export class PreviewController {
+export class ViewerController {
     constructor(host) {
         this.host = host;
         this.host.addController(this);
@@ -72,7 +72,11 @@ export class PreviewController {
     }
 
     async _onThemeChanged() {
-        //TODO: If the theme changes while compiling, we might want to recompile the diagram with the new theme.
+        // Re-compile the current diagram with the updated theme colors
+        const code = this.host.umlCode?.trim();
+        if (code && !this.compiling) {
+            this.compile(code);
+        }
     }
 
     async compile(code) {
@@ -108,7 +112,8 @@ export class PreviewController {
         }, 8000);
 
         try {
-            const result = await renderDiagram(trimmedCode);
+            const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+            const result = await renderDiagram(trimmedCode, { dark: isDark });
             if (this._compileTimeout) {
                 clearTimeout(this._compileTimeout);
                 this._compileTimeout = null;

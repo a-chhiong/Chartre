@@ -79,6 +79,9 @@ function loadMermaid() {
     return mermaidLoadingPromise;
 }
 
+/** Track the last mermaid theme to avoid unnecessary re-initialization */
+let _lastMermaidTheme = null;
+
 // ─── Renderers (internal) ───────────────────────────────────────────────────
 
 /**
@@ -103,9 +106,12 @@ async function renderPlantUML(code, options = {}) {
 /**
  * Renders Mermaid code to SVG.
  * Handles DOM cleanup for leftover error elements.
+ * Re-initializes mermaid with the correct theme when it changes.
  */
-async function renderMermaid(code) {
+async function renderMermaid(code, options = {}) {
     const id = 'mermaid-svg-' + Math.floor(Math.random() * 1000000);
+    const dark = options.dark ?? (document.documentElement.getAttribute('data-theme') === 'dark');
+    const desiredTheme = dark ? 'dark' : 'default';
 
     // Clear any leftover mermaid error elements in body
     const badge = document.getElementById('dmermaid-svg');
@@ -113,6 +119,24 @@ async function renderMermaid(code) {
 
     try {
         const m = await loadMermaid();
+
+        // Re-initialize mermaid if the theme has changed since the last render
+        if (_lastMermaidTheme !== desiredTheme) {
+            m.initialize({
+                startOnLoad: false,
+                securityLevel: 'loose',
+                theme: desiredTheme,
+                fontFamily: 'Plus Jakarta Sans, system-ui, -apple-system, sans-serif',
+                sequence: {
+                    fontFamily: 'Plus Jakarta Sans, system-ui, -apple-system, sans-serif',
+                    actorFontFamily: 'Plus Jakarta Sans, system-ui, -apple-system, sans-serif',
+                    noteFontFamily: 'Plus Jakarta Sans, system-ui, -apple-system, sans-serif',
+                    messageFontFamily: 'Plus Jakarta Sans, system-ui, -apple-system, sans-serif',
+                },
+            });
+            _lastMermaidTheme = desiredTheme;
+        }
+
         const { svg } = await m.render(id, code);
         return svg;
     } catch (err) {

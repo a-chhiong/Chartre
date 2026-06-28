@@ -6,7 +6,7 @@ import '@shoelace-style/shoelace/dist/components/button/button.js';
 
 // Bootstrap - Import and register all components
 import { EditorComponent } from './features/editor/editor-component.js';
-import { PreviewComponent } from './features/preview/preview-component.js';
+import { ViewerComponent } from './features/viewer/viewer-component.js';
 import { HeaderComponent } from './features/header/header-component.js';
 import { AppComponent } from './features/app-component.js';
 import { LightboxModal } from './components/lightbox-modal.js';

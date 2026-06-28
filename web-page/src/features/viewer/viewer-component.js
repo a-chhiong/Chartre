@@ -1,7 +1,7 @@
 import { LitElement, html, css } from 'lit';
-import { PreviewController } from './preview-controller';
+import { ViewerController } from './viewer-controller';
 
-export class PreviewComponent extends LitElement {
+export class ViewerComponent extends LitElement {
     static properties = {
         umlCode: { type: String },
         scale: { type: Number, state: true },
@@ -22,7 +22,7 @@ export class PreviewComponent extends LitElement {
             overflow: hidden;
         }
 
-        .preview-container {
+        .viewer-container {
             display: flex;
             flex-direction: column;
             flex: 1;
@@ -34,7 +34,7 @@ export class PreviewComponent extends LitElement {
         }
 
         /* Preview Header Panel */
-        .preview-header {
+        .viewer-header {
             display: flex;
             align-items: center;
             justify-content: space-between;
@@ -146,7 +146,7 @@ export class PreviewComponent extends LitElement {
             box-shadow: var(--shadow-paper);
             padding: 20px;
             box-sizing: border-box;
-            border: 1px solid rgba(0, 0, 0, 0.06);
+            border: 1px solid var(--border-color);
             display: flex;
             justify-content: center;
             align-items: center;
@@ -515,7 +515,7 @@ export class PreviewComponent extends LitElement {
 
         this._renderTimeout = null;
         this._lastSvgString = null;
-        this.controller = new PreviewController(this);
+        this.controller = new ViewerController(this);
     }
 
     get compiling() {
@@ -909,10 +909,10 @@ export class PreviewComponent extends LitElement {
         const zoomPct = Math.round(this.scale * 100);
 
         return html`
-            <div class="preview-container">
-                <div class="preview-header">
+            <div class="viewer-container">
+                <div class="viewer-header">
                     <div class="header-title">
-                        📊 <span class="title-text">Diagram Preview</span>
+                        📊 <span class="title-text">Viewer</span>
                     </div>
                     
                     <div class="zoom-controls">
@@ -990,4 +990,4 @@ export class PreviewComponent extends LitElement {
         `;
     }
 }
-customElements.define('preview-component', PreviewComponent);
+customElements.define('viewer-component', ViewerComponent);

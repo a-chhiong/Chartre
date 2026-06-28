@@ -39,7 +39,7 @@ export class AppComponent extends LitElement {
             border-right: 1px solid var(--border-color);
         }
 
-        .preview-area {
+        .viewer-area {
             min-width: 0;
             min-height: 0;
             display: flex;
@@ -228,12 +228,12 @@ export class AppComponent extends LitElement {
                          @mousedown="${(e) => c.startDrag(e)}" 
                          @touchstart="${(e) => c.startDrag(e)}"></div>
                     
-                    <div class="preview-area" style="${c.isDesktop ? `width: calc(${100 - c.splitPercentage}% - 2px); flex: none;` : `height: calc(${100 - c.splitPercentage}% - 2px); flex: none;`}">
-                        <preview-component
+                    <div class="viewer-area" style="${c.isDesktop ? `width: calc(${100 - c.splitPercentage}% - 2px); flex: none;` : `height: calc(${100 - c.splitPercentage}% - 2px); flex: none;`}">
+                        <viewer-component
                             .umlCode="${c.umlCode}"
                             ?desktop="${c.isDesktop}"
                             @status-changed="${this.handleStatusChanged}"
-                        ></preview-component>
+                        ></viewer-component>
                     </div>
                     `}
                 </main>
