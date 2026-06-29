@@ -160,16 +160,20 @@ export class ViewerComponent extends LitElement {
 
         .notation-display {
             width: 100%;
+            height: 100%;
             display: flex;
             flex-direction: column;
             align-items: center;
+            justify-content: center;
             background: transparent;
         }
 
         /* Force rendered SVG to be responsive and fit inside the paper card */
         .notation-display svg {
-            max-width: 100%;
-            height: auto !important;
+            width: 100% !important;
+            height: 100% !important;
+            max-width: none !important;
+            max-height: none !important;
             display: block;
         }
 
@@ -505,6 +509,8 @@ export class ViewerComponent extends LitElement {
         this.scale = 1.0;
         this.translateX = 0;
         this.translateY = 0;
+        this._nativeWidth = null;
+        this._nativeHeight = null;
 
         // Pan state
         this.isDragging = false;
@@ -546,6 +552,8 @@ export class ViewerComponent extends LitElement {
         const currentSvgString = this.controller.svgString;
         if (currentSvgString !== this._lastSvgString) {
             this._lastSvgString = currentSvgString;
+            this._nativeWidth = null;
+            this._nativeHeight = null;
             if (currentSvgString) {
                 // Wait a frame for the SVG rendering to settle and layout dimensions to be valid
                 requestAnimationFrame(() => {
@@ -560,12 +568,49 @@ export class ViewerComponent extends LitElement {
         }
     }
 
+    _getSVGDimensions() {
+        if (this._nativeWidth && this._nativeHeight) {
+            return { width: this._nativeWidth, height: this._nativeHeight };
+        }
+
+        const canvas = this.shadowRoot.querySelector('.diagram-paper');
+        const svg = canvas?.querySelector('svg');
+        if (!svg) {
+            return { width: 800, height: 600 };
+        }
+
+        let svgWidth = 0;
+        let svgHeight = 0;
+
+        const viewBoxAttr = svg.getAttribute('viewBox');
+        if (viewBoxAttr) {
+            const parts = viewBoxAttr.split(/[\s,]+/).map(Number);
+            svgWidth = parts[2];
+            svgHeight = parts[3];
+        }
+
+        if (!svgWidth || !svgHeight) {
+            const bbox = svg.getBBox ? svg.getBBox() : null;
+            if (bbox && bbox.width > 0 && bbox.height > 0) {
+                svgWidth = bbox.width + bbox.x;
+                svgHeight = bbox.height + bbox.y;
+            } else {
+                svgWidth = svg.clientWidth || 800;
+                svgHeight = svg.clientHeight || 600;
+            }
+        }
+
+        this._nativeWidth = svgWidth;
+        this._nativeHeight = svgHeight;
+        return { width: svgWidth, height: svgHeight };
+    }
+
     applyTransform(smooth = false) {
         const canvas = this.shadowRoot.querySelector('.diagram-paper');
         if (!canvas) return;
 
         if (smooth) {
-            canvas.style.transition = 'transform 0.2s cubic-bezier(0.4, 0, 0.2, 1)';
+            canvas.style.transition = 'transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), width 0.2s cubic-bezier(0.4, 0, 0.2, 1), height 0.2s cubic-bezier(0.4, 0, 0.2, 1)';
             setTimeout(() => {
                 if (canvas.style.transition && canvas.style.transition.includes('transform')) {
                     canvas.style.transition = 'none';
@@ -575,7 +620,10 @@ export class ViewerComponent extends LitElement {
             canvas.style.transition = 'none';
         }
 
-        canvas.style.transform = `translate3d(${this.translateX}px, ${this.translateY}px, 0) scale(${this.scale})`;
+        const { width, height } = this._getSVGDimensions();
+        canvas.style.width = `${width * this.scale}px`;
+        canvas.style.height = `${height * this.scale}px`;
+        canvas.style.transform = `translate3d(${this.translateX}px, ${this.translateY}px, 0)`;
     }
 
     fitToScreen() {
@@ -587,33 +635,34 @@ export class ViewerComponent extends LitElement {
         if (!svg) return;
 
         // Reset styles temporarily to read native size
+        canvas.style.transform = 'none';
         canvas.style.width = '';
         canvas.style.height = '';
+
+        const displayDiv = canvas.querySelector('.notation-display');
+        if (displayDiv) {
+            displayDiv.style.width = '';
+            displayDiv.style.height = '';
+        }
+
         svg.style.width = '';
         svg.style.height = '';
+        svg.style.maxWidth = '';
+        svg.style.maxHeight = '';
+        svg.removeAttribute('width');
+        svg.removeAttribute('height');
 
-        const viewBoxAttr = svg.getAttribute('viewBox');
-        let svgWidth = 0;
-        let svgHeight = 0;
-
-        if (viewBoxAttr) {
-            const [, , w, h] = viewBoxAttr.split(' ').map(Number);
-            svgWidth = w;
-            svgHeight = h;
-        } else {
-            const rect = svg.getBoundingClientRect();
-            svgWidth = rect.width || svg.clientWidth || 800;
-            svgHeight = rect.height || svg.clientHeight || 600;
-        }
+        const { width: svgWidth, height: svgHeight } = this._getSVGDimensions();
 
         const viewportWidth = viewport.clientWidth;
         const viewportHeight = viewport.clientHeight;
 
         if (viewportWidth === 0 || viewportHeight === 0) return;
 
-        // Standardize canvas dimensions to match the SVG size
-        canvas.style.width = `${svgWidth}px`;
-        canvas.style.height = `${svgHeight}px`;
+        if (displayDiv) {
+            displayDiv.style.width = '100%';
+            displayDiv.style.height = '100%';
+        }
         svg.style.width = '100%';
         svg.style.height = '100%';
         svg.style.maxWidth = 'none';
@@ -640,19 +689,7 @@ export class ViewerComponent extends LitElement {
         const svg = canvas.querySelector('svg');
         if (!svg) return;
 
-        const viewBoxAttr = svg.getAttribute('viewBox');
-        let svgWidth = 0;
-        let svgHeight = 0;
-
-        if (viewBoxAttr) {
-            const [, , w, h] = viewBoxAttr.split(' ').map(Number);
-            svgWidth = w;
-            svgHeight = h;
-        } else {
-            const rect = svg.getBoundingClientRect();
-            svgWidth = rect.width || svg.clientWidth || 800;
-            svgHeight = rect.height || svg.clientHeight || 600;
-        }
+        const { width: svgWidth, height: svgHeight } = this._getSVGDimensions();
 
         const viewportWidth = viewport.clientWidth;
         const viewportHeight = viewport.clientHeight;
