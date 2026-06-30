@@ -174,8 +174,11 @@ export class ViewerController {
 function extractPlantUMLError(svgString) {
     if (!svgString) return null;
     
-    // PlantUML error diagrams typically contain "Syntax Error?" or "No @enduml found"
-    const hasErrorPattern = svgString.includes('Syntax Error?') || svgString.includes('No @enduml found');
+    // PlantUML error diagrams contain specific visual underlines or error location headers:
+    // - text-decoration="wavy underline"
+    // - [From textarea (line 12) ]
+    const hasErrorPattern = svgString.includes('text-decoration="wavy underline"') || 
+                            /\[From\s+.+\(line\s+\d+\)\]/i.test(svgString);
     if (!hasErrorPattern) return null;
     
     try {
