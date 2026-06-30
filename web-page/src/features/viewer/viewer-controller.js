@@ -1,3 +1,4 @@
+/* global __PLANTUML_VERSION__, __PLANTUML_COMMIT__ */
 import { renderDiagram } from '../../services/diagram-engine.js';
 
 export class ViewerController {
@@ -118,12 +119,32 @@ export class ViewerController {
                 clearTimeout(this._compileTimeout);
                 this._compileTimeout = null;
             }
-            this.svgString = result.svg;
+            let svgOutput = result.svg;
+            if (result.family === 'plantuml') {
+                svgOutput = svgOutput
+                    .replace(/\$version\$/g, __PLANTUML_VERSION__)
+                    .replace(/\$git\.commit\.id\$/g, __PLANTUML_COMMIT__);
+            }
+            this.svgString = svgOutput;
             this.diagramType = result.family;
-            this.error = null;
-            this.compiling = false;
-            this.host.requestUpdate();
-            this._dispatchStatus('✓ Diagram Ready', false);
+
+            // Check for PlantUML embedded syntax errors
+            let plantumlErr = null;
+            if (result.family === 'plantuml') {
+                plantumlErr = extractPlantUMLError(svgOutput);
+            }
+
+            if (plantumlErr) {
+                this.error = plantumlErr;
+                this.compiling = false;
+                this.host.requestUpdate();
+                this._dispatchStatus('✗ Compilation Error', true);
+            } else {
+                this.error = null;
+                this.compiling = false;
+                this.host.requestUpdate();
+                this._dispatchStatus('✓ Diagram Ready', false);
+            }
         } catch (err) {
             if (this._compileTimeout) {
                 clearTimeout(this._compileTimeout);
@@ -145,4 +166,34 @@ export class ViewerController {
             composed: true
         }));
     }
+}
+
+/**
+ * Extracts the syntax error text from PlantUML SVG output.
+ */
+function extractPlantUMLError(svgString) {
+    if (!svgString) return null;
+    
+    // PlantUML error diagrams typically contain "Syntax Error?" or "No @enduml found"
+    const hasErrorPattern = svgString.includes('Syntax Error?') || svgString.includes('No @enduml found');
+    if (!hasErrorPattern) return null;
+    
+    try {
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(svgString, 'image/svg+xml');
+        const textElements = Array.from(doc.querySelectorAll('text'));
+        
+        // Filter and clean lines
+        const lines = textElements
+            .map(el => el.textContent.trim())
+            .filter(text => text.length > 0);
+            
+        if (lines.length > 0) {
+            return lines.join('\n');
+        }
+    } catch (e) {
+        console.error("Failed to parse PlantUML error SVG:", e);
+    }
+    
+    return "PlantUML Syntax Error (see diagram below for details)";
 }

@@ -7,7 +7,9 @@ export class ViewerComponent extends LitElement {
         scale: { type: Number, state: true },
         translateX: { type: Number, state: true },
         translateY: { type: Number, state: true },
-        desktop: { type: Boolean, reflect: true }
+        desktop: { type: Boolean, reflect: true },
+        _toastActive: { type: Boolean, state: true },
+        _toastMessage: { type: String, state: true }
     };
 
     static styles = css`
@@ -197,41 +199,57 @@ export class ViewerComponent extends LitElement {
             animation: pulse-slow 3s infinite ease-in-out;
         }
 
-        /* Fatal Error Panel */
+        /* Fatal Error Panel (Centred on Screen) */
         .error-panel {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
             background: var(--warning-bg);
             border: 1px solid var(--warning-border);
-            border-radius: 10px;
-            padding: 12px 16px;
-            margin-top: 12px;
-            width: 75%;
-            max-width: 800px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            border-radius: 12px;
+            padding: 16px 20px;
+            width: 90%;
+            max-width: 600px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
             backdrop-filter: blur(8px);
             -webkit-backdrop-filter: blur(8px);
-            flex-shrink: 0;
+            z-index: 30;
+            box-sizing: border-box;
+            user-select: text;
+            -webkit-user-select: text;
+            cursor: default;
         }
 
         .error-header {
-            display: flex;
-            align-items: center;
-            gap: 8px;
             color: var(--accent-rose);
-            font-size: 0.85rem;
+            font-size: 0.9rem;
             font-weight: 600;
-            margin-bottom: 8px;
+            margin-bottom: 12px;
+            user-select: none;
+            -webkit-user-select: none;
         }
 
         .error-message {
             font-family: var(--font-code);
-            font-size: 0.75rem;
+            font-size: 0.8rem;
             color: var(--warning-text);
-            line-height: 1.4;
-            padding: 8px;
+            line-height: 1.5;
+            padding: 12px;
             background: var(--warning-item-bg);
-            border-radius: 4px;
-            border-left: 3px solid var(--accent-rose);
+            border-radius: 6px;
+            border-left: 4px solid var(--accent-rose);
             white-space: pre-wrap;
+            user-select: text;
+            -webkit-user-select: text;
+            max-height: 250px;
+            overflow-y: auto;
+            cursor: text;
+        }
+
+        /* Override grab cursor inside PlantUML error SVG text elements */
+        .diagram-paper.error-state text {
+            cursor: text !important;
         }
 
         /* Action Controls Group */
@@ -501,6 +519,46 @@ export class ViewerComponent extends LitElement {
             0%, 100% { opacity: 0.4; }
             50% { opacity: 0.8; }
         }
+
+        /* Toast Notification */
+        .toast-notification {
+            position: absolute;
+            bottom: 24px;
+            left: 50%;
+            transform: translate3d(-50%, 20px, 0);
+            background: rgba(17, 24, 39, 0.9);
+            color: #ffffff;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            padding: 10px 20px;
+            border-radius: 30px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3), 0 8px 10px -6px rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            z-index: 100;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.25s ease, transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        .toast-notification.active {
+            opacity: 1;
+            transform: translate3d(-50%, 0, 0);
+        }
+
+        /* When paper has an error, allow text selection inside it and its SVG */
+        .diagram-paper.error-state,
+        .diagram-paper.error-state * {
+            user-select: text !important;
+            -webkit-user-select: text !important;
+        }
+
+        .diagram-paper.error-state {
+            border-color: var(--warning-border) !important;
+        }
     `;
 
     constructor() {
@@ -521,7 +579,12 @@ export class ViewerComponent extends LitElement {
 
         this._renderTimeout = null;
         this._lastSvgString = null;
+        this._lastError = null;
         this.controller = new ViewerController(this);
+
+        this._toastActive = false;
+        this._toastMessage = '';
+        this._toastTimeout = null;
     }
 
     get compiling() {
@@ -550,11 +613,13 @@ export class ViewerComponent extends LitElement {
         }
 
         const currentSvgString = this.controller.svgString;
-        if (currentSvgString !== this._lastSvgString) {
+        const currentError = this.error;
+        if (currentSvgString !== this._lastSvgString || currentError !== this._lastError) {
             this._lastSvgString = currentSvgString;
+            this._lastError = currentError;
             this._nativeWidth = null;
             this._nativeHeight = null;
-            if (currentSvgString) {
+            if (currentSvgString || currentError) {
                 // Wait a frame for the SVG rendering to settle and layout dimensions to be valid
                 requestAnimationFrame(() => {
                     this.fitToScreen();
@@ -730,7 +795,13 @@ export class ViewerComponent extends LitElement {
     // Pointer interaction events (Pan)
     onPointerDown(e) {
         if (e.button !== 0) return; // Only drag with left mouse button
-        if (e.target.closest('.zoom-controls') || e.target.closest('.header-controls') || e.target.closest('.error-panel') || e.target.closest('.empty-state')) return;
+        if (
+            e.target.closest('.zoom-controls') || 
+            e.target.closest('.header-controls') || 
+            e.target.closest('.error-panel') || 
+            e.target.closest('.empty-state') ||
+            e.target.tagName?.toLowerCase() === 'text'
+        ) return;
 
         this.isDragging = true;
         this.startX = e.clientX;
@@ -803,7 +874,13 @@ export class ViewerComponent extends LitElement {
     }
 
     onDoubleClick(e) {
-        if (e.target.closest('.zoom-controls') || e.target.closest('.header-controls') || e.target.closest('.error-panel') || e.target.closest('.empty-state')) return;
+        if (
+            e.target.closest('.zoom-controls') || 
+            e.target.closest('.header-controls') || 
+            e.target.closest('.error-panel') || 
+            e.target.closest('.empty-state') ||
+            e.target.tagName?.toLowerCase() === 'text'
+        ) return;
         this.fitToScreen();
     }
 
@@ -879,6 +956,20 @@ export class ViewerComponent extends LitElement {
         }
     }
 
+    showToast(message) {
+        if (this._toastTimeout) {
+            clearTimeout(this._toastTimeout);
+        }
+        this._toastMessage = message;
+        this._toastActive = true;
+        this.requestUpdate();
+        
+        this._toastTimeout = setTimeout(() => {
+            this._toastActive = false;
+            this.requestUpdate();
+        }, 2500);
+    }
+
     handleCopySVG() {
         const svg = this.shadowRoot.querySelector('.notation-display svg');
         if (!svg) {
@@ -901,15 +992,7 @@ export class ViewerComponent extends LitElement {
             }
             const svgString = new XMLSerializer().serializeToString(clone);
             navigator.clipboard.writeText(svgString).then(() => {
-                this.dispatchEvent(new CustomEvent('show-confirm', {
-                    detail: {
-                        title: 'Success',
-                        message: '✓ SVG code copied to clipboard!',
-                        isAlert: true
-                    },
-                    bubbles: true,
-                    composed: true
-                }));
+                this.showToast('✓ SVG code copied to clipboard!');
             }).catch(err => {
                 console.error("Clipboard API failed, trying fallback:", err);
                 const textarea = document.createElement('textarea');
@@ -918,15 +1001,7 @@ export class ViewerComponent extends LitElement {
                 textarea.select();
                 document.execCommand('copy');
                 document.body.removeChild(textarea);
-                this.dispatchEvent(new CustomEvent('show-confirm', {
-                    detail: {
-                        title: 'Success',
-                        message: '✓ SVG code copied to clipboard!',
-                        isAlert: true
-                    },
-                    bubbles: true,
-                    composed: true
-                }));
+                this.showToast('✓ SVG code copied to clipboard!');
             });
         } catch (error) {
             this.dispatchEvent(new CustomEvent('show-confirm', {
@@ -953,11 +1028,11 @@ export class ViewerComponent extends LitElement {
                     </div>
                     
                     <div class="zoom-controls">
-                        <button class="zoom-btn" @click="${this.zoomOut}" title="Zoom Out">－</button>
+                        <button class="zoom-btn" @click="${this.zoomOut}" ?disabled="${!hasCode || (!!this.error && !this.controller.svgString)}" title="Zoom Out">－</button>
                         <span class="zoom-value">${zoomPct}%</span>
-                        <button class="zoom-btn" @click="${this.zoomIn}" title="Zoom In">＋</button>
-                        <button class="zoom-btn reset" @click="${this.resetZoom}" title="Actual Size (1:1)">1:1</button>
-                        <button class="zoom-btn fit" @click="${this.fitToScreen}" title="Fit to Screen" style="display: flex; align-items: center; justify-content: center;">
+                        <button class="zoom-btn" @click="${this.zoomIn}" ?disabled="${!hasCode || (!!this.error && !this.controller.svgString)}" title="Zoom In">＋</button>
+                        <button class="zoom-btn reset" @click="${this.resetZoom}" ?disabled="${!hasCode || (!!this.error && !this.controller.svgString)}" title="Actual Size (1:1)">1:1</button>
+                        <button class="zoom-btn fit" @click="${this.fitToScreen}" ?disabled="${!hasCode || (!!this.error && !this.controller.svgString)}" title="Fit to Screen" style="display: flex; align-items: center; justify-content: center;">
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display: block;">
                                 <polyline points="15 3 21 3 21 9"></polyline>
                                 <polyline points="9 21 3 21 3 15"></polyline>
@@ -999,21 +1074,21 @@ export class ViewerComponent extends LitElement {
                                 <p>Chartre is ready.<br>Type PlantUML/Mermaid code or choose a Template to begin.</p>
                             </div>
                         ` : html`
-                            ${!this.error ? html`
-                                <div class="diagram-paper">
+                            ${this.controller.svgString ? html`
+                                <div class="diagram-paper ${this.error ? 'error-state' : ''}">
                                     <div class="notation-display"></div>
                                 </div>
-                            ` : ''}
+                            ` : html`
+                                ${this.error ? html`
+                                    <div class="error-panel">
+                                        <div class="error-header">
+                                            ❌ Compilation Error
+                                        </div>
+                                        <div class="error-message">${this.error}</div>
+                                    </div>
+                                ` : ''}
+                            `}
                         `}
-
-                        ${this.error ? html`
-                            <div class="error-panel">
-                                <div class="error-header">
-                                    ❌ Execution Exception
-                                </div>
-                                <div class="error-message">${this.error}</div>
-                            </div>
-                        ` : ''}
                     </div>
 
                     ${this.compiling ? html`
@@ -1021,6 +1096,10 @@ export class ViewerComponent extends LitElement {
                             <div class="loading-spinner"></div>
                         </div>
                     ` : ''}
+
+                    <div class="toast-notification ${this._toastActive ? 'active' : ''}">
+                        ${this._toastMessage}
+                    </div>
                 </div>
 
             </div>
