@@ -5,19 +5,33 @@ import { execSync } from 'child_process';
 // Dynamically read PlantUML engine package metadata
 const plantumlPkg = JSON.parse(readFileSync(new URL('./node_modules/@plantuml/core/package.json', import.meta.url), 'utf-8'));
 
-// Dynamically resolve the Git commit hash of the repository
-let gitCommit = 'release';
+// Dynamically resolve the Git commit hash and build time of the `@plantuml/core` package
+let plantumlCommit = 'unknown';
+let plantumlBuildTime = 'unknown';
 try {
-  gitCommit = execSync('git rev-parse --short HEAD').toString().trim();
+  const metadata = JSON.parse(execSync(`npm show @plantuml/core@${plantumlPkg.version} --json`, {
+    timeout: 2000,
+    stdio: ['ignore', 'pipe', 'ignore']
+  }).toString());
+  if (metadata.gitHead) {
+    plantumlCommit = metadata.gitHead.slice(0, 7);
+  }
+  if (metadata.time && metadata.time[plantumlPkg.version]) {
+    const date = new Date(metadata.time[plantumlPkg.version]);
+    if (!isNaN(date.getTime())) {
+      plantumlBuildTime = date.toISOString().replace('T', ' ').substring(0, 19) + ' UTC';
+    }
+  }
 } catch (e) {
-  // Fallback to release if git is not available or initialized
+  // Fallback if npm registry is not reachable or command fails
 }
 
 export default defineConfig({
   base: '/Chartre/',
   define: {
     __PLANTUML_VERSION__: JSON.stringify(plantumlPkg.version),
-    __PLANTUML_COMMIT__: JSON.stringify(gitCommit)
+    __PLANTUML_COMMIT__: JSON.stringify(plantumlCommit || 'unknown'),
+    __PLANTUML_BUILD_TIME__: JSON.stringify(plantumlBuildTime || 'unknown')
   },
   server: {
     port: 3000,

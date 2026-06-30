@@ -1,4 +1,4 @@
-/* global __PLANTUML_VERSION__, __PLANTUML_COMMIT__ */
+/* global __PLANTUML_VERSION__, __PLANTUML_COMMIT__, __PLANTUML_BUILD_TIME__ */
 import { renderDiagram } from '../../services/diagram-engine.js';
 
 export class ViewerController {
@@ -123,7 +123,8 @@ export class ViewerController {
             if (result.family === 'plantuml') {
                 svgOutput = svgOutput
                     .replace(/\$version\$/g, __PLANTUML_VERSION__)
-                    .replace(/\$git\.commit\.id\$/g, __PLANTUML_COMMIT__);
+                    .replace(/\$git\.commit\.id\$/g, __PLANTUML_COMMIT__)
+                    .replace(/Unknown compile time/g, __PLANTUML_BUILD_TIME__);
             }
             this.svgString = svgOutput;
             this.diagramType = result.family;
